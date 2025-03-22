@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论文翻译 | PaperTrans</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-book-open"></i>
+                <span>PaperTrans</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active">首页</a></li>
+                    <li><a href="#">历史记录</a></li>
+                    <li><a href="#">使用指南</a></li>
+                    <li><a href="#">关于我们</a></li>
+                </ul>
+            </nav>
+            <div class="user-actions">
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索论文...">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <button class="btn btn-primary"><i class="fas fa-plus"></i> 发布文章</button>
+                <div class="notification">
+                    <i class="far fa-bell"></i>
+                </div>
+                <div class="avatar">
+                    <img src="https://via.placeholder.com/40" alt="用户头像">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>专业论文翻译工具</h1>
+                <p>快速、精准地翻译学术论文，支持双栏对照阅读</p>
+                <div class="upload-container">
+                    <div class="tabs">
+                        <button class="tab active" data-tab="file">上传PDF文件</button>
+                        <button class="tab" data-tab="url">输入论文URL</button>
+                    </div>
+                    <div class="tab-content" id="file-tab">
+                        <div class="upload-area">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>拖拽PDF文件至此处或</p>
+                            <label for="file-upload" class="btn btn-secondary">选择文件</label>
+                            <input type="file" id="file-upload" accept=".pdf" hidden>
+                        </div>
+                    </div>
+                    <div class="tab-content hidden" id="url-tab">
+                        <div class="url-input-area">
+                            <input type="text" placeholder="请输入论文URL地址...">
+                            <button class="btn btn-secondary">获取论文</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary translate-btn">开始翻译</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2>我们的特色</h2>
+                <div class="feature-cards">
+                    <div class="feature-card">
+                        <div class="icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <h3>双栏对照翻译</h3>
+                        <p>原文与译文并列展示，方便对比阅读</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h3>快速精准</h3>
+                        <p>先进AI模型，专业学术语料，翻译更准确</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">
+                            <i class="fas fa-download"></i>
+                        </div>
+                        <h3>一键导出</h3>
+                        <p>支持PDF、Word等多种格式导出</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <h3>历史记录</h3>
+                        <p>自动保存翻译历史，随时查阅</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="recent-papers">
+            <div class="container">
+                <h2>最近翻译</h2>
+                <div class="paper-cards">
+                    <div class="paper-card">
+                        <div class="paper-info">
+                            <h3>深度学习在自然语言处理中的应用</h3>
+                            <p class="authors">作者：张三, 李四, 王五</p>
+                            <p class="journal">发表于：《计算机科学》2023年第3期</p>
+                            <div class="tags">
+                                <span class="tag">深度学习</span>
+                                <span class="tag">NLP</span>
+                                <span class="tag">人工智能</span>
+                            </div>
+                        </div>
+                        <div class="paper-actions">
+                            <button class="btn btn-outline">查看</button>
+                        </div>
+                    </div>
+                    <div class="paper-card">
+                        <div class="paper-info">
+                            <h3>量子计算的最新进展与挑战</h3>
+                            <p class="authors">作者：John Smith, Mary Johnson</p>
+                            <p class="journal">发表于：《Nature》2023年5月刊</p>
+                            <div class="tags">
+                                <span class="tag">量子计算</span>
+                                <span class="tag">物理学</span>
+                            </div>
+                        </div>
+                        <div class="paper-actions">
+                            <button class="btn btn-outline">查看</button>
+                        </div>
+                    </div>
+                    <div class="paper-card">
+                        <div class="paper-info">
+                            <h3>新型冠状病毒疫苗研发最新进展</h3>
+                            <p class="authors">作者：赵六, 钱七, 孙八</p>
+                            <p class="journal">发表于：《生物医学》2023年第2期</p>
+                            <div class="tags">
+                                <span class="tag">医学</span>
+                                <span class="tag">疫苗</span>
+                                <span class="tag">病毒学</span>
+                            </div>
+                        </div>
+                        <div class="paper-actions">
+                            <button class="btn btn-outline">查看</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>PaperTrans</h3>
+                    <p>专业的学术论文翻译工具，为科研工作者提供高效便捷的翻译服务。</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-weixin"></i></a>
+                        <a href="#"><i class="fab fa-weibo"></i></a>
+                        <a href="#"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>快速链接</h3>
+                    <ul>
+                        <li><a href="#">首页</a></li>
+                        <li><a href="#">使用指南</a></li>
+                        <li><a href="#">常见问题</a></li>
+                        <li><a href="#">联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <p><i class="fas fa-envelope"></i> support@papertrans.com</p>
+                    <p><i class="fas fa-phone"></i> 400-123-4567</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 PaperTrans. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html> 

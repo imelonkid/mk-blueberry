@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论文翻译 | PaperTrans</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/translate.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-book-open"></i>
+                <span>PaperTrans</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="#">历史记录</a></li>
+                    <li><a href="#">使用指南</a></li>
+                    <li><a href="#">关于我们</a></li>
+                </ul>
+            </nav>
+            <div class="user-actions">
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索论文...">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <button class="btn btn-primary"><i class="fas fa-plus"></i> 发布文章</button>
+                <div class="notification">
+                    <i class="far fa-bell"></i>
+                </div>
+                <div class="avatar">
+                    <img src="https://via.placeholder.com/40" alt="用户头像">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="translate-page">
+        <div class="translate-header">
+            <div class="container">
+                <div class="paper-meta">
+                    <h1 class="paper-title">深度学习在自然语言处理中的应用</h1>
+                    <p class="paper-authors">作者：张三, 李四, 王五</p>
+                    <p class="paper-journal">发表于：《计算机科学》2023年第3期</p>
+                    <div class="tags">
+                        <span class="tag">深度学习</span>
+                        <span class="tag">NLP</span>
+                        <span class="tag">人工智能</span>
+                    </div>
+                </div>
+                <div class="translate-actions">
+                    <button class="btn btn-outline"><i class="fas fa-download"></i> 下载PDF</button>
+                    <button class="btn btn-outline"><i class="fas fa-share-alt"></i> 分享</button>
+                    <button class="btn btn-outline"><i class="fas fa-star"></i> 收藏</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="translate-toolbar">
+                <div class="toolbar-group">
+                    <button class="btn btn-secondary active"><i class="fas fa-columns"></i> 双栏视图</button>
+                    <button class="btn btn-secondary"><i class="fas fa-align-justify"></i> 单栏视图</button>
+                </div>
+                <div class="toolbar-group">
+                    <button class="btn btn-secondary"><i class="fas fa-minus"></i></button>
+                    <span>100%</span>
+                    <button class="btn btn-secondary"><i class="fas fa-plus"></i></button>
+                </div>
+                <div class="toolbar-group">
+                    <button class="btn btn-secondary"><i class="fas fa-copy"></i> 复制全部</button>
+                    <button class="btn btn-secondary"><i class="fas fa-edit"></i> 编辑翻译</button>
+                </div>
+            </div>
+            
+            <div class="paper-content">
+                <div class="content-columns">
+                    <div class="content-column original">
+                        <div class="column-header">
+                            <h3>原文</h3>
+                        </div>
+                        <div class="paper-section">
+                            <h2>Abstract</h2>
+                            <p>Deep learning has revolutionized the field of natural language processing (NLP) in recent years. This paper provides a comprehensive overview of the applications of deep learning in various NLP tasks such as text classification, named entity recognition, machine translation, and question answering systems. We discuss the evolution from traditional rule-based and statistical methods to modern neural network approaches, highlighting the performance improvements and challenges in each area. Additionally, we explore recent advancements including transformer-based models like BERT, GPT, and their variants that have set new state-of-the-art results across multiple benchmarks. Finally, we identify ongoing research directions and potential future developments in this rapidly evolving field.</p>
+                        </div>
+                        <div class="paper-section">
+                            <h2>1. Introduction</h2>
+                            <p>Natural Language Processing (NLP) is a field at the intersection of computer science, artificial intelligence, and linguistics focused on the interactions between computers and human language. Over the past decade, deep learning approaches have significantly transformed how NLP tasks are approached and solved, leading to unprecedented improvements in performance across various applications.</p>
+                            <p>Traditional NLP systems relied heavily on hand-crafted features and required extensive domain expertise to design effective models. These systems typically followed a pipeline architecture where each component addressed a specific linguistic level: morphological, syntactic, semantic, and pragmatic analysis. While these approaches achieved reasonable success, they often struggled with the complexity and ambiguity inherent in human language.</p>
+                            <p>The introduction of distributed representations and neural network architectures marked a paradigm shift in NLP. Word embeddings such as Word2Vec (Mikolov et al., 2013) and GloVe (Pennington et al., 2014) enabled more effective representation of words in a continuous vector space, capturing semantic relationships that were difficult to model with discrete representations. This was followed by increasingly sophisticated neural architectures from recurrent neural networks (RNNs) and convolutional neural networks (CNNs) to attention mechanisms and transformer models.</p>
+                        </div>
+                    </div>
+                    <div class="content-column translated">
+                        <div class="column-header">
+                            <h3>译文</h3>
+                        </div>
+                        <div class="paper-section">
+                            <h2>摘要</h2>
+                            <p>近年来，深度学习彻底革新了自然语言处理(NLP)领域。本文全面概述了深度学习在文本分类、命名实体识别、机器翻译和问答系统等各种NLP任务中的应用。我们讨论了从传统的基于规则和统计方法到现代神经网络方法的演变，强调了各个领域的性能改进和挑战。此外，我们探讨了最近的进展，包括基于Transformer的模型，如BERT、GPT及其变体，这些模型在多个基准测试中创造了新的最先进结果。最后，我们确定了这一快速发展领域的持续研究方向和潜在的未来发展。</p>
+                        </div>
+                        <div class="paper-section">
+                            <h2>1. 引言</h2>
+                            <p>自然语言处理(NLP)是计算机科学、人工智能和语言学交叉的领域，专注于计算机与人类语言之间的交互。在过去的十年里，深度学习方法显著改变了NLP任务的处理和解决方式，在各种应用中实现了前所未有的性能提升。</p>
+                            <p>传统的NLP系统严重依赖手工特征工程，需要广泛的领域专业知识来设计有效的模型。这些系统通常遵循管道架构，其中每个组件解决特定的语言层次：形态学、句法、语义和语用分析。虽然这些方法取得了合理的成功，但它们常常难以处理人类语言固有的复杂性和歧义性。</p>
+                            <p>分布式表示和神经网络架构的引入标志着NLP的范式转变。Word2Vec（Mikolov等人，2013年）和GloVe（Pennington等人，2014年）等词嵌入技术实现了在连续向量空间中更有效地表示单词，捕获了难以用离散表示建模的语义关系。随后出现了越来越复杂的神经架构，从循环神经网络（RNN）和卷积神经网络（CNN）到注意力机制和Transformer模型。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pagination">
+                <button class="btn btn-secondary"><i class="fas fa-chevron-left"></i> 上一页</button>
+                <div class="page-numbers">
+                    <span class="current-page">1</span> / <span class="total-pages">36</span>
+                </div>
+                <button class="btn btn-primary">下一页 <i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>PaperTrans</h3>
+                    <p>专业的学术论文翻译工具，为科研工作者提供高效便捷的翻译服务。</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-weixin"></i></a>
+                        <a href="#"><i class="fab fa-weibo"></i></a>
+                        <a href="#"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>快速链接</h3>
+                    <ul>
+                        <li><a href="#">首页</a></li>
+                        <li><a href="#">使用指南</a></li>
+                        <li><a href="#">常见问题</a></li>
+                        <li><a href="#">联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>联系我们</h3>
+                    <p><i class="fas fa-envelope"></i> support@papertrans.com</p>
+                    <p><i class="fas fa-phone"></i> 400-123-4567</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 PaperTrans. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html> 
