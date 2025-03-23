@@ -16,10 +16,10 @@
             </div>
             <nav>
                 <ul>
-                    <li><a href="#" class="active">首页</a></li>
-                    <li><a href="#">历史记录</a></li>
-                    <li><a href="#">使用指南</a></li>
-                    <li><a href="#">关于我们</a></li>
+                    <li><a href="index.html" class="active">首页</a></li>
+                    <li><a href="history.html">历史记录</a></li>
+                    <li><a href="guide.html">使用指南</a></li>
+                    <li><a href="about.html">关于我们</a></li>
                 </ul>
             </nav>
             <div class="user-actions">
@@ -41,29 +41,40 @@
     <main>
         <section class="hero">
             <div class="container">
-                <h1>专业论文翻译工具</h1>
-                <p>快速、精准地翻译学术论文，支持双栏对照阅读</p>
-                <div class="upload-container">
-                    <div class="tabs">
-                        <button class="tab active" data-tab="file">上传PDF文件</button>
-                        <button class="tab" data-tab="url">输入论文URL</button>
-                    </div>
-                    <div class="tab-content" id="file-tab">
-                        <div class="upload-area">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <p>拖拽PDF文件至此处或</p>
-                            <label for="file-upload" class="btn btn-secondary">选择文件</label>
-                            <input type="file" id="file-upload" accept=".pdf" hidden>
-                        </div>
-                    </div>
-                    <div class="tab-content hidden" id="url-tab">
-                        <div class="url-input-area">
-                            <input type="text" placeholder="请输入论文URL地址...">
-                            <button class="btn btn-secondary">获取论文</button>
-                        </div>
-                    </div>
-                    <button class="btn btn-primary translate-btn">开始翻译</button>
+                <h1>PaperTrans 学术论文翻译助手</h1>
+                <p>通过人工智能，轻松实现学术论文的精准翻译</p>
+                
+                <div class="hero-actions">
+                    <a href="#upload" class="btn btn-primary">上传论文</a>
+                    <a href="translate.html" class="btn btn-secondary">查看最近翻译</a>
                 </div>
+            </div>
+        </section>
+
+        <section id="upload" class="upload-section">
+            <div class="container">
+                <h2>上传论文</h2>
+                <div class="tabs">
+                    <button class="tab active" data-tab="file">上传PDF文件</button>
+                    <button class="tab" data-tab="url">输入论文URL</button>
+                </div>
+                <div class="tab-content" id="file-tab">
+                    <div class="upload-area">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>拖拽PDF文件至此处或</p>
+                        <label for="file-upload" class="btn btn-secondary">选择文件</label>
+                        <input type="file" id="file-upload" accept=".pdf" hidden>
+                        <div id="upload-status" class="status hidden"></div>
+                    </div>
+                    <div class="file-info-container hidden"></div>
+                </div>
+                <div class="tab-content hidden" id="url-tab">
+                    <div class="url-input-area">
+                        <input type="text" placeholder="请输入论文URL地址...">
+                        <button class="btn btn-secondary">获取论文</button>
+                    </div>
+                </div>
+                <button id="upload-btn" class="btn btn-primary translate-btn hidden">上传并处理</button>
             </div>
         </section>
 
@@ -158,31 +169,6 @@
 
     <footer>
         <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>PaperTrans</h3>
-                    <p>专业的学术论文翻译工具，为科研工作者提供高效便捷的翻译服务。</p>
-                    <div class="social-icons">
-                        <a href="#"><i class="fab fa-weixin"></i></a>
-                        <a href="#"><i class="fab fa-weibo"></i></a>
-                        <a href="#"><i class="fab fa-github"></i></a>
-                    </div>
-                </div>
-                <div class="footer-section">
-                    <h3>快速链接</h3>
-                    <ul>
-                        <li><a href="#">首页</a></li>
-                        <li><a href="#">使用指南</a></li>
-                        <li><a href="#">常见问题</a></li>
-                        <li><a href="#">联系我们</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h3>联系我们</h3>
-                    <p><i class="fas fa-envelope"></i> support@papertrans.com</p>
-                    <p><i class="fas fa-phone"></i> 400-123-4567</p>
-                </div>
-            </div>
             <div class="footer-bottom">
                 <p>&copy; 2023 PaperTrans. 保留所有权利。</p>
             </div>

@@ -11,6 +11,9 @@ import argparse
 import shutil
 from pathlib import Path
 
+# 导入PDF后处理模块
+from pdf_post_process import remove_slash_marks
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
@@ -22,7 +25,7 @@ logger = logging.getLogger("pdf_translator_bridge")
 RESULT_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results')
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
-def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh', provider='deepseek', model='deepseek-chat', format='dual'):
+def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh', provider='deepseek', model='deepseek-chat', format='dual', post_process=True, force=False):
     """
     翻译PDF文档
     
@@ -34,6 +37,8 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
         provider (str): 翻译提供商 ('deepseek'/'gpt'/'anthropic'/'azure'等)
         model (str): 模型名称
         format (str): 输出格式, 'dual'表示中英对照, 'mono'表示仅中文
+        post_process (bool): 是否进行后处理去除斜杠标记
+        force (bool): 是否强制重新翻译，即使已有翻译结果
         
     返回:
         str: 翻译后的PDF文件路径，如果失败则返回None
@@ -51,6 +56,7 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
     logger.info(f"源语言: {source_lang}, 目标语言: {target_lang}")
     logger.info(f"提供商: {provider}, 模型: {model}")
     logger.info(f"输出格式: {format}")
+    logger.info(f"强制重新翻译: {force}")
     
     # 结果文件路径
     result_folder = os.path.join(RESULT_FOLDER, task_id)
@@ -65,6 +71,11 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
         expected_generated_filename = f"{os.path.basename(pdf_path).rsplit('.', 1)[0]}-dual.pdf"
         
     result_path = os.path.join(result_folder, result_filename)
+    
+    # 如果不是强制重新翻译，检查是否已有翻译结果
+    if not force and os.path.exists(result_path):
+        logger.info(f"已找到现有翻译结果: {result_path}，直接返回")
+        return result_path
     
     try:
         # 构建pdf2zh命令 - 根据pdf2zh的帮助信息调整参数格式
@@ -108,6 +119,24 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
         # 验证结果文件是否存在
         if os.path.exists(result_path):
             logger.info(f"翻译完成，文件保存在: {result_path}")
+            
+            # 后处理：去除斜杠标记
+            if post_process and format == 'mono':
+                try:
+                    logger.info(f"开始对文件进行后处理以去除斜杠标记: {result_path}")
+                    post_processed_path = os.path.join(result_folder, f"{task_id}_processed.pdf")
+                    if remove_slash_marks(result_path, post_processed_path):
+                        logger.info(f"后处理成功，更新结果文件: {post_processed_path}")
+                        # 备份原始翻译文件
+                        original_backup = os.path.join(result_folder, f"{task_id}_original.pdf")
+                        shutil.copy2(result_path, original_backup)
+                        # 用后处理结果替换原始结果
+                        shutil.move(post_processed_path, result_path)
+                    else:
+                        logger.warning(f"后处理失败，将使用原始翻译结果")
+                except Exception as e:
+                    logger.exception(f"后处理过程中发生错误: {str(e)}")
+            
             return result_path
         else:
             # 检查输出目录下是否有生成的PDF
@@ -140,6 +169,24 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                         logger.info(f"找到并移动生成的文件: {pdf_path} -> {result_path}")
                     else:
                         logger.info(f"找到生成的文件: {pdf_path}")
+                    
+                    # 后处理：去除斜杠标记
+                    if post_process and format == 'mono':
+                        try:
+                            logger.info(f"开始对文件进行后处理以去除斜杠标记: {result_path}")
+                            post_processed_path = os.path.join(result_folder, f"{task_id}_processed.pdf")
+                            if remove_slash_marks(result_path, post_processed_path):
+                                logger.info(f"后处理成功，更新结果文件: {post_processed_path}")
+                                # 备份原始翻译文件
+                                original_backup = os.path.join(result_folder, f"{task_id}_original.pdf")
+                                shutil.copy2(result_path, original_backup)
+                                # 用后处理结果替换原始结果
+                                shutil.move(post_processed_path, result_path)
+                            else:
+                                logger.warning(f"后处理失败，将使用原始翻译结果")
+                        except Exception as e:
+                            logger.exception(f"后处理过程中发生错误: {str(e)}")
+                    
                     return result_path
             
             # 然后检查当前工作目录
@@ -149,6 +196,24 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                     # 移动文件到结果目录
                     shutil.move(curr_dir_path, result_path)
                     logger.info(f"在当前目录找到并移动生成的文件: {curr_dir_path} -> {result_path}")
+                    
+                    # 后处理：去除斜杠标记
+                    if post_process and format == 'mono':
+                        try:
+                            logger.info(f"开始对文件进行后处理以去除斜杠标记: {result_path}")
+                            post_processed_path = os.path.join(result_folder, f"{task_id}_processed.pdf")
+                            if remove_slash_marks(result_path, post_processed_path):
+                                logger.info(f"后处理成功，更新结果文件: {post_processed_path}")
+                                # 备份原始翻译文件
+                                original_backup = os.path.join(result_folder, f"{task_id}_original.pdf")
+                                shutil.copy2(result_path, original_backup)
+                                # 用后处理结果替换原始结果
+                                shutil.move(post_processed_path, result_path)
+                            else:
+                                logger.warning(f"后处理失败，将使用原始翻译结果")
+                        except Exception as e:
+                            logger.exception(f"后处理过程中发生错误: {str(e)}")
+                    
                     return result_path
             
             logger.error(f"pdf2zh成功执行，但结果文件不存在: {result_path}")
@@ -269,6 +334,8 @@ def main():
                 provider = data.get('provider', 'deepseek')
                 model = data.get('model', 'deepseek-chat')
                 output_format = data.get('format', 'dual')  # 新增格式参数
+                post_process = data.get('post_process', True)  # 新增后处理参数
+                force = data.get('force', False)  # 新增强制重新翻译参数
                 
                 if output_format not in ['mono', 'dual']:
                     output_format = 'dual'  # 默认使用中英对照格式
@@ -278,14 +345,22 @@ def main():
                 
                 task = tasks[task_id]
                 
-                if task['status'] not in ['pending', 'failed']:
+                if task['status'] not in ['pending', 'failed'] and not force:
+                    # 如果任务已经完成，并且不是强制重新翻译，则直接返回现有结果
+                    if task['status'] == 'completed':
+                        return jsonify({
+                            "task_id": task_id,
+                            "status": task['status'],
+                            "message": "翻译已完成",
+                            "reused": True
+                        })
                     return jsonify({"error": f"任务状态为 {task['status']}，无法开始翻译"}), 400
                 
                 # 更新任务状态
                 task['status'] = 'processing'
                 task['message'] = "翻译处理中..."
                 
-                logger.info(f"开始翻译任务 {task_id}, 源语言: {source_lang}, 目标语言: {target_lang}, 提供商: {provider}, 格式: {output_format}")
+                logger.info(f"开始翻译任务 {task_id}, 源语言: {source_lang}, 目标语言: {target_lang}, 提供商: {provider}, 格式: {output_format}, 后处理: {post_process}, 强制重新翻译: {force}")
                 
                 try:
                     # 调用翻译函数
@@ -296,7 +371,9 @@ def main():
                         target_lang=target_lang,
                         provider=provider,
                         model=model,
-                        format=output_format  # 传递格式参数
+                        format=output_format,
+                        post_process=post_process,
+                        force=force
                     )
                     
                     if result_path:
@@ -353,7 +430,24 @@ def main():
                 if not task['result_path'] or not os.path.exists(task['result_path']):
                     return jsonify({"error": "翻译结果不存在"}), 404
                 
-                # 由于我们只生成了一个翻译文件，这里暂时假设要无论请求的是哪个文件，都返回唯一的翻译结果
+                # 根据filename参数决定返回哪个版本的翻译文件
+                result_folder = os.path.join(RESULT_FOLDER, task_id)
+                
+                # 根据请求的文件名确定要返回的文件
+                if filename == 'mono.pdf':
+                    # 请求单语言版本
+                    mono_filename = f"{task_id}_translated_mono.pdf"
+                    mono_path = os.path.join(result_folder, mono_filename)
+                    if os.path.exists(mono_path):
+                        return send_from_directory(result_folder, mono_filename, as_attachment=False)
+                elif filename == 'dual.pdf':
+                    # 请求双语言版本
+                    dual_filename = f"{task_id}_translated_dual.pdf"
+                    dual_path = os.path.join(result_folder, dual_filename)
+                    if os.path.exists(dual_path):
+                        return send_from_directory(result_folder, dual_filename, as_attachment=False)
+                
+                # 如果找不到特定版本，返回默认结果
                 return send_from_directory(
                     os.path.dirname(task['result_path']), 
                     os.path.basename(task['result_path']), 
@@ -390,6 +484,190 @@ def main():
                 result_filename = os.path.basename(task['result_path'])
                 
                 return send_from_directory(result_dir, result_filename, as_attachment=True)
+            
+            @app.route('/api/check_translation/<task_id>', methods=['GET'])
+            def check_translation(task_id):
+                """检查特定任务是否已经有翻译结果"""
+                if task_id not in tasks:
+                    # 尝试检查结果目录是否有对应的文件，可能是从之前的会话保存的
+                    result_folder = os.path.join(RESULT_FOLDER, task_id)
+                    
+                    if os.path.exists(result_folder):
+                        # 如果结果文件夹存在，检查是否有翻译文件
+                        mono_path = os.path.join(result_folder, f"{task_id}_translated_mono.pdf")
+                        dual_path = os.path.join(result_folder, f"{task_id}_translated_dual.pdf")
+                        
+                        has_mono = os.path.exists(mono_path)
+                        has_dual = os.path.exists(dual_path)
+                        
+                        if has_mono or has_dual:
+                            # 找到了翻译文件，将任务添加到tasks字典
+                            # 尝试找到原始文件
+                            uploads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+                            original_files = [f for f in os.listdir(uploads_dir) if f.startswith(task_id)]
+                            
+                            original_path = None
+                            filename = "unknown.pdf"
+                            
+                            if original_files:
+                                original_path = os.path.join(uploads_dir, original_files[0])
+                                filename = original_files[0].replace(f"{task_id}_", "")
+                            
+                            # 创建任务记录
+                            tasks[task_id] = {
+                                "id": task_id,
+                                "filename": filename,
+                                "original_path": original_path,
+                                "result_path": dual_path if has_dual else mono_path,
+                                "status": "completed",
+                                "message": "已从之前的会话恢复任务"
+                            }
+                            
+                            logger.info(f"从结果目录恢复了任务 {task_id}")
+                            
+                            return jsonify({
+                                "exists": True,
+                                "formats": {
+                                    "mono": has_mono,
+                                    "dual": has_dual
+                                },
+                                "status": "completed"
+                            })
+                
+                task = tasks[task_id]
+                
+                # 检查是否有结果文件
+                result_folder = os.path.join(RESULT_FOLDER, task_id)
+                
+                # 检查mono和dual两种格式
+                mono_path = os.path.join(result_folder, f"{task_id}_translated_mono.pdf")
+                dual_path = os.path.join(result_folder, f"{task_id}_translated_dual.pdf")
+                
+                has_mono = os.path.exists(mono_path)
+                has_dual = os.path.exists(dual_path)
+                
+                if has_mono or has_dual:
+                    # 如果找到了翻译文件，但任务状态不是completed，更新状态
+                    if task['status'] != 'completed':
+                        task['status'] = 'completed'
+                        task['message'] = '翻译完成'
+                        task['result_path'] = dual_path if has_dual else mono_path
+                    
+                    return jsonify({
+                        "exists": True,
+                        "formats": {
+                            "mono": has_mono,
+                            "dual": has_dual
+                        },
+                        "status": task['status']
+                    })
+                
+                return jsonify({"exists": False, "status": task['status']})
+            
+            @app.route('/api/latest_file', methods=['GET'])
+            def get_latest_file():
+                """获取最新上传的文件信息"""
+                if not tasks:
+                    # 尝试从结果目录获取文件信息
+                    try:
+                        result_dirs = os.listdir(RESULT_FOLDER)
+                        if not result_dirs:
+                            return jsonify({"error": "没有上传的文件"}), 404
+                        
+                        # 按照修改时间排序
+                        result_dirs.sort(key=lambda x: os.path.getmtime(os.path.join(RESULT_FOLDER, x)), reverse=True)
+                        
+                        # 检查第一个（最新的）目录
+                        latest_dir = result_dirs[0]
+                        latest_task_id = latest_dir
+                        
+                        # 查找是否有翻译文件
+                        dual_path = os.path.join(RESULT_FOLDER, latest_dir, f"{latest_task_id}_translated_dual.pdf")
+                        mono_path = os.path.join(RESULT_FOLDER, latest_dir, f"{latest_task_id}_translated_mono.pdf")
+                        
+                        # 如果没有找到文件，返回错误
+                        if not (os.path.exists(dual_path) or os.path.exists(mono_path)):
+                            return jsonify({"error": "未找到翻译文件"}), 404
+                        
+                        # 尝试找到原始文件
+                        uploads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+                        original_files = [f for f in os.listdir(uploads_dir) if f.startswith(latest_task_id)]
+                        
+                        filename = "unknown.pdf"
+                        original_path = None
+                        
+                        if original_files:
+                            original_path = os.path.join(uploads_dir, original_files[0])
+                            filename = original_files[0].replace(f"{latest_task_id}_", "")
+                        
+                        # 将任务添加到tasks字典
+                        tasks[latest_task_id] = {
+                            "id": latest_task_id,
+                            "filename": filename,
+                            "original_path": original_path,
+                            "result_path": dual_path if os.path.exists(dual_path) else mono_path,
+                            "status": "completed",
+                            "message": "已从结果目录恢复任务"
+                        }
+                        
+                        logger.info(f"从结果目录恢复了最新任务 {latest_task_id}")
+                        
+                        # 返回任务信息
+                        content_summary = {
+                            "title": os.path.splitext(filename)[0],
+                            "total_pages": "未知",
+                            "has_abstract": False,
+                            "sections_count": 0
+                        }
+                        
+                        return jsonify({
+                            "task_id": latest_task_id,
+                            "filename": filename,
+                            "status": "completed",
+                            "content_summary": content_summary
+                        })
+                    except Exception as e:
+                        logger.exception(f"从结果目录恢复任务出错: {str(e)}")
+                        return jsonify({"error": "没有上传的文件"}), 404
+                
+                # 按照上传时间排序，获取最新的任务
+                latest_task_id = None
+                latest_task = None
+                latest_time = 0
+                
+                for task_id, task in tasks.items():
+                    # 获取文件的创建时间
+                    try:
+                        file_time = os.path.getctime(task['original_path']) if task['original_path'] else 0
+                        if file_time > latest_time:
+                            latest_time = file_time
+                            latest_task_id = task_id
+                            latest_task = task
+                    except (OSError, KeyError):
+                        continue
+                
+                if not latest_task_id:
+                    return jsonify({"error": "无法确定最新文件"}), 404
+                
+                # 获取文件信息
+                try:
+                    # 这里可以添加更多的文件信息，如标题，页数等
+                    content_summary = {
+                        "title": os.path.splitext(latest_task['filename'])[0],
+                        "total_pages": "未知",  # 这里可以用PyPDF2等工具获取实际页数
+                        "has_abstract": False,
+                        "sections_count": 0
+                    }
+                    
+                    return jsonify({
+                        "task_id": latest_task_id,
+                        "filename": latest_task['filename'],
+                        "status": latest_task['status'],
+                        "content_summary": content_summary
+                    })
+                except Exception as e:
+                    logger.exception(f"获取最新文件信息出错: {str(e)}")
+                    return jsonify({"error": str(e)}), 500
             
             logger.info(f"启动服务于端口 {args.port}")
             app.run(host='0.0.0.0', port=args.port)

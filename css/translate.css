@@ -1,14 +1,31 @@
+/* 导入字体 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+/* 全局字体设置 */
+:root {
+    --paper-font: 'Noto Serif', 'PingFang SC', 'Times New Roman', 'Source Han Serif SC', 'Songti SC', serif !important;
+    --paper-title-size: 20px;
+    --paper-heading-size: 17px;
+    --paper-text-size: 14px;
+    --column-header-size: 15px;
+    --text-color: #222;
+    --text-light-color: #444;
+    --translating-color: #888;
+}
+
 /* 翻译页面样式 */
 .translate-page {
-    background-color: #f9fafb;
+    background-color: #f5f5f5;
     min-height: calc(100vh - 70px - 300px); /* 减去navbar和footer的高度 */
+    font-family: var(--paper-font);
 }
 
 .translate-header {
     background-color: var(--white);
-    box-shadow: var(--shadow);
-    padding: 30px 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    padding: 20px 0;
     margin-bottom: 20px;
+    border-bottom: 1px solid #eaeaea;
 }
 
 .translate-header .container {
@@ -21,17 +38,81 @@
     max-width: 70%;
 }
 
+.paper-title-container {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+    text-align: center;
+}
+
 .paper-title {
-    font-size: 24px;
-    margin-bottom: 12px;
-    color: var(--text-dark);
+    font-size: var(--paper-title-size);
+    font-weight: 700;
+    line-height: 1.4;
+    color: #222;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.section-title {
+    font-size: var(--paper-heading-size);
+    font-weight: 600;
+    color: #333;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 8px;
+    position: relative;
+}
+
+.section-title::before {
+    content: "";
+    position: absolute;
+    left: -10px;
+    top: 0;
+    bottom: 8px;
+    width: 3px;
+    background-color: #4070f4;
+    border-radius: 2px;
+}
+
+.paragraph {
+    font-size: var(--paper-text-size);
+    font-weight: normal;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    text-align: justify;
+    color: var(--text-color);
+    padding-left: 0;
+    position: relative;
+    text-indent: 2em;
+}
+
+.paragraph + .section-title {
+    margin-top: 30px;
+}
+
+.abstract-section {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    background-color: rgba(240, 245, 250, 0.5);
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.abstract {
+    font-style: italic;
+    color: #444;
+    text-indent: 0;
 }
 
 .paper-authors,
 .paper-journal {
-    color: var(--text-light);
-    margin-bottom: 8px;
-    font-size: 14px;
+    color: #666;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-family: var(--paper-font);
 }
 
 .translate-actions {
@@ -40,92 +121,374 @@
 }
 
 .translate-toolbar {
-    background-color: var(--white);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    padding: 10px 20px;
-    margin-bottom: 20px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
+    padding: 6px 12px;
+    margin-bottom: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border: 1px solid #e8e8e8;
 }
 
 .toolbar-group {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
 }
 
 .toolbar-group span {
+    font-size: 12px;
+    color: #666;
+}
+
+.toolbar-group .btn {
+    padding: 3px 8px;
+    font-size: 12px;
+    border-radius: 3px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    color: #444;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toolbar-group .btn:hover {
+    background-color: #f9f9f9;
+    border-color: #ccc;
+}
+
+.toolbar-group .btn.active {
+    background-color: #4070f4;
+    color: #fff;
+    border-color: #4070f4;
+    opacity: 0.9;
+}
+
+/* API密钥输入 */
+.api-key-input {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.api-key-input input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+}
+
+.api-key-input input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(64, 112, 244, 0.2);
+}
+
+.api-key-input .btn {
+    white-space: nowrap;
+}
+
+/* 文件上传样式增强 */
+.upload-area {
+    position: relative;
+    padding: 40px 30px;
+}
+
+.selected-file {
+    margin-top: 15px;
+    padding: 10px 15px;
+    background-color: rgba(64, 112, 244, 0.1);
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    color: var(--primary-color);
+}
+
+#upload-btn {
+    margin-top: 20px;
+}
+
+.status {
+    margin-top: 15px;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    font-size: 14px;
+}
+
+.status.loading {
+    background-color: rgba(254, 215, 170, 0.3);
+    color: #b45309;
+}
+
+.status.success {
+    background-color: rgba(167, 243, 208, 0.3);
+    color: #065f46;
+}
+
+.status.error {
+    background-color: rgba(254, 202, 202, 0.3);
+    color: #b91c1c;
+}
+
+.file-info-container {
+    margin-top: 25px;
+    padding: 20px;
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.file-info h3 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: var(--text-dark);
+    word-break: break-all;
+}
+
+.file-info p {
+    margin-bottom: 8px;
+    color: var(--text-light);
+}
+
+/* 加载状态样式 */
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-container {
+    background-color: var(--white);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+    max-width: 90%;
+    width: 400px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(64, 112, 244, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+#loading-message {
+    font-size: 16px;
+    color: var(--text-dark);
+    margin-bottom: 20px;
+}
+
+#loading-progress {
+    padding: 0 10px;
+}
+
+.progress-bar {
+    height: 10px;
+    background-color: #e5e7eb;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
     font-size: 14px;
     color: var(--text-light);
 }
 
-.paper-content {
-    background-color: var(--white);
+/* 通知样式 */
+#notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    background-color: var(--primary-color);
+    color: var(--white);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 900;
+}
+
+#notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 页面内容样式 */
+.paper-content {
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     margin-bottom: 20px;
     overflow: hidden;
+    font-family: var(--paper-font);
+    border: 1px solid #e8e8e8;
 }
 
 .content-columns {
     display: flex;
-    min-height: 600px;
+    min-height: 800px;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .content-column {
     flex: 1;
-    padding: 0;
-    overflow-y: auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    overflow: auto;
+    min-height: 800px;
+    display: flex;
+    flex-direction: column;
     position: relative;
+    height: 90vh;
+    overflow: hidden;
+    background-color: #f9f9f9;
+    flex: 1;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 .content-column.original {
-    border-right: 1px solid var(--border-color);
+    border-right: 1px solid #e8e8e8;
 }
 
 .column-header {
     position: sticky;
     top: 0;
-    background-color: var(--secondary-color);
-    padding: 10px 20px;
-    border-bottom: 1px solid var(--border-color);
+    background-color: #f8f8f8;
+    padding: 5px 20px;
+    border-bottom: 1px solid #e8e8e8;
     z-index: 10;
 }
 
 .column-header h3 {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text-dark);
+    font-size: var(--column-header-size);
+    font-weight: 600;
     margin: 0;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    background-color: #f9f9f9;
+    color: #444;
 }
 
 .paper-section {
-    padding: 20px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 10px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    font-family: var(--paper-font);
 }
 
 .paper-section:last-child {
     border-bottom: none;
 }
 
+.paper-section h1 {
+    font-size: var(--paper-title-size);
+    margin: 15px 0 10px 0;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    color: #222;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+    border-bottom: 1px solid #f0f0f0;
+    font-family: var(--paper-font);
+}
+
 .paper-section h2 {
-    font-size: 20px;
-    margin-bottom: 15px;
-    color: var(--text-dark);
+    font-size: var(--paper-heading-size);
+    margin: 15px 0 10px 0;
+    padding-bottom: 5px;
+    color: #333;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+    border-bottom: 1px solid #f5f5f5;
+    font-family: var(--paper-font);
 }
 
 .paper-section p {
-    font-size: 15px;
-    line-height: 1.6;
-    margin-bottom: 15px;
-    color: var(--text-dark);
+    font-size: var(--paper-text-size);
+    line-height: 1.7;
+    margin: 10px 0;
+    color: var(--text-color);
     text-align: justify;
+    font-family: var(--paper-font);
+    letter-spacing: 0.005em;
+    word-spacing: 0.02em;
+    font-weight: normal;
+    padding-bottom: 6px;
+    white-space: pre-wrap;
+    display: block;
+    text-indent: 0;
+    overflow-wrap: break-word;
+    hyphens: none;
+    tab-size: 4;
 }
 
-.paper-section p:last-child {
-    margin-bottom: 0;
+.paper-section .abstract {
+    font-style: normal;
+    color: var(--text-color);
+    font-size: var(--paper-text-size);
+    font-family: var(--paper-font);
+    line-height: 1.7;
+    opacity: 0.95;
+    margin: 10px 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+/* 特殊处理文本内容 */
+.content-column p {
+    display: block;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    text-align: justify;
+    white-space: pre-wrap;
+}
+
+.content-column {
+    line-height: 1.7;
+    padding: 0;
+    overflow-y: auto;
+    position: relative;
+    font-family: var(--paper-font);
+    background-color: #fff;
 }
 
 .pagination {
@@ -147,8 +510,8 @@
 
 /* 高亮样式 */
 .highlight {
-    background-color: rgba(64, 112, 244, 0.1);
-    border-bottom: 2px solid var(--primary-color);
+    background-color: rgba(64, 112, 244, 0.04);
+    border-bottom: 1px solid rgba(64, 112, 244, 0.3);
 }
 
 /* 单栏视图样式 */
@@ -165,8 +528,26 @@
     border-bottom: none;
 }
 
+/* 隐藏元素 */
+.hidden {
+    display: none !important;
+}
+
+/* 错误消息 */
+p.error {
+    color: #b91c1c;
+    padding: 20px;
+    text-align: center;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
+    :root {
+        --paper-title-size: 16px;
+        --paper-heading-size: 15px;
+        --paper-text-size: 13px;
+    }
+    
     .translate-header .container {
         flex-direction: column;
     }
@@ -193,4 +574,605 @@
     .toolbar-group {
         margin-bottom: 10px;
     }
+    
+    .api-key-input {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .paper-title {
+        font-size: calc(var(--paper-title-size) - 2px);
+    }
+    
+    .section-title {
+        font-size: calc(var(--paper-heading-size) - 1px);
+    }
+    
+    .paragraph {
+        font-size: calc(var(--paper-text-size) - 1px);
+    }
+}
+
+/* 翻译设置面板 */
+.translate-settings {
+    background-color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border: 1px solid #eaeaea;
+}
+
+.settings-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.settings-row:last-child {
+    margin-bottom: 0;
+}
+
+.settings-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.settings-group label {
+    font-size: 12px;
+    color: #555;
+    min-width: 70px;
+}
+
+.select-input, .text-input {
+    padding: 5px 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 12px;
+    min-width: 160px;
+    color: #333;
+}
+
+.select-input:focus, .text-input:focus {
+    outline: none;
+    border-color: #4070f4;
+    box-shadow: 0 0 0 2px rgba(64, 112, 244, 0.08);
+}
+
+/* 添加加载指示器样式 */
+.loading-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: white;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-message {
+    font-size: 18px;
+    text-align: center;
+}
+
+/* 错误消息样式 */
+.error-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #ff5252;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 5px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+    display: none;
+    max-width: 350px;
+}
+
+/* 通知消息样式 */
+.notification-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #4caf50;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 5px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+    display: none;
+    max-width: 350px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+/* 强制重置和应用字体 */
+.content-column h1,
+.content-column h2,
+.content-column h3,
+.content-column h4,
+.content-column h5,
+.content-column h6,
+.content-column p,
+.content-column div,
+.content-column span {
+    font-family: var(--paper-font);
+}
+
+/* 翻译页面按钮样式 */
+#translate-btn {
+    background-color: #4070f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-weight: normal;
+}
+
+#translate-btn:hover {
+    background-color: #3060e0;
+}
+
+#translate-btn:active {
+    background-color: #2050d0;
+}
+
+/* 确保原文和译文的样式一致 */
+.content-column.original,
+.content-column.translated {
+    background-color: #fff;
+    color: #3c3c3c;
+    line-height: 1.5;
+}
+
+/* 为正在翻译的内容添加样式 */
+.translating {
+    color: #999;
+    font-style: normal;
+    font-weight: normal;
+    opacity: 0.7;
+    display: block;
+    white-space: pre-wrap;
+    line-height: 1.7;
+    padding: 5px 0;
+    margin: 10px 0;
+}
+
+h1.translating, h2.translating {
+    border-bottom: 1px solid #f5f5f5;
+    padding-bottom: 5px;
+}
+
+p.translating {
+    padding-bottom: 6px;
+}
+
+/* 上传提示样式 */
+.upload-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    min-height: 300px;
+    background-color: #fff;
+}
+
+.upload-prompt h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #444;
+    font-family: var(--paper-font);
+}
+
+.upload-prompt p {
+    font-size: 16px;
+    margin-bottom: 25px;
+    color: #666;
+    font-family: var(--paper-font);
+}
+
+.upload-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.upload-actions .btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.upload-actions .btn-primary {
+    background-color: #4070f4;
+    color: white;
+    border: none;
+}
+
+.upload-actions .btn-primary:hover {
+    background-color: #3060e0;
+}
+
+/* 标签样式 */
+.tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #f0f4f8;
+    color: #557;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+/* 为数学公式添加样式 */
+.math-formula {
+    font-family: 'Times New Roman', serif !important;
+    font-style: italic;
+    margin: 10px 0;
+    text-align: center;
+    white-space: nowrap;
+    overflow-x: auto;
+    padding: 5px 0;
+}
+
+/* 为列表添加样式 */
+.paper-section ul, .paper-section ol {
+    margin: 10px 0 10px 20px;
+    padding-left: 15px;
+    font-size: var(--paper-text-size);
+    line-height: 1.7;
+    color: var(--text-color);
+    font-family: var(--paper-font);
+}
+
+.paper-section li {
+    margin-bottom: 8px;
+    font-family: var(--paper-font);
+}
+
+/* 为表格添加样式 */
+.paper-section table {
+    border-collapse: collapse;
+    margin: 15px 0;
+    width: 100%;
+    font-size: var(--paper-text-size);
+    font-family: var(--paper-font);
+}
+
+.paper-section th, .paper-section td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.paper-section th {
+    background-color: #f5f5f5;
+}
+
+/* 保留引用和代码块的格式 */
+.paper-section blockquote {
+    margin: 15px 0;
+    padding: 10px 20px;
+    border-left: 3px solid #eee;
+    background-color: #f9f9f9;
+    font-style: italic;
+    color: #666;
+}
+
+.paper-section pre, .paper-section code {
+    font-family: 'Courier New', monospace;
+    background-color: #f5f5f5;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 90%;
+    white-space: pre;
+    overflow-x: auto;
+}
+
+.paper-section pre {
+    padding: 10px;
+    margin: 15px 0;
+}
+
+/* 保留特殊格式的段落 (如参考文献) */
+.paper-section .references {
+    font-size: calc(var(--paper-text-size) - 1px);
+    padding-left: 20px;
+    text-indent: -20px;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+/* 处理上标和下标 */
+sup, sub {
+    font-size: 80%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+}
+
+sup {
+    top: -0.5em;
+}
+
+sub {
+    bottom: -0.25em;
+}
+
+/* 特殊符号处理 */
+.symbol {
+    font-family: 'Symbol', 'Arial Unicode MS', serif;
+}
+
+/* 图表标题样式 */
+.figure-caption {
+    font-size: calc(var(--paper-text-size) - 1px);
+    color: #555;
+    text-align: center;
+    margin: 8px 0 15px 0;
+    font-style: italic;
+}
+
+/* 表格标题样式 */
+.table-caption {
+    font-size: calc(var(--paper-text-size) - 1px);
+    color: #555;
+    text-align: center;
+    margin: 15px 0 8px 0;
+    font-style: italic;
+}
+
+/* 保持脚注样式 */
+.footnote {
+    font-size: 90%;
+    color: #555;
+    vertical-align: super;
+    padding: 0 2px;
+}
+
+.footnote-text {
+    font-size: calc(var(--paper-text-size) - 2px);
+    color: #555;
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+/* 确保段落间距始终保持一致 */
+.paper-section p + p {
+    margin-top: 12px;
+}
+
+/* PDF查看相关样式 */
+.pdf-view-mode .content-column {
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.content-column.original,
+.content-column.translated {
+    height: 100%;
+    min-height: 800px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.pdf-container {
+    width: 100%;
+    height: 100%;
+    min-height: 800px;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.pdf-container iframe,
+.pdf-container embed {
+    width: 100%;
+    height: 100%;
+    min-height: 800px;
+    border: none;
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 0;
+    display: block;
+    box-sizing: border-box;
+}
+
+.translation-info {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    position: relative !important;
+    overflow: hidden !important;
+    max-width: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* 确保左侧和右侧的列完全相同 */
+.content-column.original,
+.content-column.translated {
+    height: 100% !important;
+    min-height: 800px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 1 !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+}
+
+/* 确保PDF容器铺满整个区域 */
+.pdf-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 800px !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+}
+
+/* 确保iframe铺满整个容器 */
+.pdf-container iframe,
+.pdf-container embed {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 800px !important;
+    border: none !important;
+    flex: 1 1 auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+}
+
+/* 当翻译信息内部有内容时的样式 */
+.translation-info h3,
+.translation-info p,
+.translation-info .translation-steps {
+    padding: 5px 15px;
+    margin: 5px 0;
+    box-sizing: border-box;
+}
+
+/* 确保内容列铺满整个容器 */
+.content-column {
+    position: relative;
+    height: 90vh;
+    overflow: hidden;
+    background-color: #f9f9f9;
+    flex: 1;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* 确保整个内容区域铺满 */
+.content-columns {
+    display: flex;
+    min-height: 800px;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* PDF控制区域样式 */
+.pdf-controls {
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    background-color: #f8f8f8;
+    border-top: 1px solid #eaeaea;
+}
+
+/* 当浏览器窗口大小改变时保持PDF尺寸一致 */
+@media (min-width: 992px) {
+    .content-columns {
+        height: 90vh;
+    }
+    
+    .content-column.original,
+    .content-column.translated {
+        height: 100%;
+    }
+}
+
+/* 当左侧栏显示PDF时隐藏工具栏 */
+.pdf-view-mode .translate-toolbar {
+    display: none;
+}
+
+/* 翻译占位内容样式 */
+.translation-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 600px;
+    background-color: #fff;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+/* 确保翻译按钮在页面上方可见 */
+#translate-settings {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #fff;
+    padding: 10px 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 } 

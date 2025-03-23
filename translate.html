@@ -7,6 +7,381 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/translate.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .pdf-view-mode .content-columns {
+            display: flex;
+            flex-direction: row;
+            height: calc(100vh - 200px);
+            min-height: 650px;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+        
+        .pdf-view-mode .content-column {
+            flex: 1;
+            overflow: hidden;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            background-color: #fff;
+            padding: 0;
+            margin: 0 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .pdf-container {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            position: relative;
+            /* 确保滚动事件能正确传播 */
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .pdf-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            /* 修改为相对定位，确保与父容器正确交互 */
+            position: relative;
+            display: block;
+        }
+        
+        /* 添加PDF iframe样式 */
+        .pdf-iframe {
+            display: block;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* 添加错误消息样式 */
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff1f0;
+            color: #f5222d;
+            padding: 15px 20px;
+            border-radius: 4px;
+            border: 1px solid #ffa39e;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        /* 添加加载指示器样式 */
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255,255,255,0.8);
+            padding: 15px 20px;
+            border-radius: 4px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .column-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .column-controls button {
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .column-controls button:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .form-select {
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background-color: white;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border: 1px dashed #ddd;
+        }
+        
+        #file-upload {
+            display: none;
+        }
+        
+        .upload-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4070f4;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        .upload-btn:hover {
+            background-color: #3060d0;
+        }
+        
+        .translation-status {
+            margin-top: 10px;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background-color: #fff8e6;
+            color: #d48806;
+            border: 1px solid #ffe58f;
+        }
+        
+        .status-processing {
+            background-color: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+        
+        .status-completed {
+            background-color: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        
+        .status-failed {
+            background-color: #fff1f0;
+            color: #f5222d;
+            border: 1px solid #ffa39e;
+        }
+        
+        .file-info-panel {
+            background-color: #f9f9f9;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .file-info {
+            flex: 1;
+        }
+        
+        .file-info h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        
+        .file-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .file-actions {
+            margin-left: 20px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(64, 112, 244, 0.3);
+            border-radius: 50%;
+            border-top-color: #4070f4;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 自定义复选框样式 */
+        .form-check {
+            position: relative;
+            padding-left: 5px;
+        }
+        
+        .form-check input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+            margin-right: 8px;
+            vertical-align: middle;
+            background-color: white;
+            position: relative;
+        }
+        
+        .form-check input[type="checkbox"]:checked {
+            background-color: #4070f4;
+            border-color: #4070f4;
+        }
+        
+        .form-check input[type="checkbox"]:checked::after {
+            content: '\2714';
+            font-size: 12px;
+            color: white;
+            position: absolute;
+            top: 0px;
+            left: 3px;
+        }
+        
+        .form-check label {
+            cursor: pointer;
+            font-size: 14px;
+            user-select: none;
+            color: #555;
+        }
+        
+        .form-check:hover input[type="checkbox"]:not(:disabled) {
+            border-color: #4070f4;
+        }
+        
+        /* 添加最大宽度限制，让主内容区域更宽 */
+        .container {
+            max-width: 1600px;
+            width: 95%;
+            margin: 0 auto;
+        }
+        
+        /* 减少顶部空间 */
+        .translate-header {
+            padding: 10px 0;
+        }
+        
+        /* 调整顶部标题大小 */
+        .paper-title {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        /* 缩小工具栏高度 */
+        .translate-toolbar {
+            padding: 8px 0;
+            margin-bottom: 10px;
+        }
+        
+        /* 减少页脚大小 */
+        footer {
+            padding: 15px 0;
+            font-size: 0.9rem;
+        }
+        
+        /* 调整页脚内容 */
+        .footer-content {
+            padding: 10px 0;
+        }
+        
+        /* 修改导航栏样式，使其更紧凑 */
+        .navbar {
+            padding: 8px 0;
+            border-bottom: 1px solid #eaeaea;
+            background-color: #fff;
+        }
+        
+        .navbar .logo {
+            font-size: 1.2rem;
+        }
+        
+        .navbar .logo i {
+            margin-right: 5px;
+        }
+        
+        .navbar nav ul li {
+            margin: 0 10px;
+        }
+        
+        /* 调整搜索栏 */
+        .search-bar {
+            max-width: 200px;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 1200px) {
+            .container {
+                width: 98%;
+                max-width: none;
+            }
+            
+            .pdf-view-mode .content-columns {
+                height: calc(100vh - 180px);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .pdf-view-mode .content-columns {
+                flex-direction: column !important;
+                height: auto;
+            }
+            
+            .pdf-view-mode .content-column {
+                height: 500px;
+                margin-bottom: 15px;
+            }
+        }
+        
+        /* 增加列标题的对比度和突出显示 */
+        .column-header {
+            background-color: #f5f7fa;
+            padding: 8px 15px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .column-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        /* 优化PDF控制器样式 */
+        .pdf-controls {
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        
+        .pdf-controls:hover {
+            opacity: 1;
+        }
+        
+        /* 优化页面内容，减少不必要的空间 */
+        .translate-page {
+            padding-top: 10px;
+        }
+    </style>
 </head>
 <body>
     <header class="navbar">
@@ -18,9 +393,9 @@
             <nav>
                 <ul>
                     <li><a href="index.html">首页</a></li>
-                    <li><a href="#">历史记录</a></li>
-                    <li><a href="#">使用指南</a></li>
-                    <li><a href="#">关于我们</a></li>
+                    <li><a href="history.html">历史记录</a></li>
+                    <li><a href="guide.html">使用指南</a></li>
+                    <li><a href="about.html">关于我们</a></li>
                 </ul>
             </nav>
             <div class="user-actions">
@@ -42,119 +417,654 @@
     <main class="translate-page">
         <div class="translate-header">
             <div class="container">
-                <div class="paper-meta">
-                    <h1 class="paper-title">深度学习在自然语言处理中的应用</h1>
-                    <p class="paper-authors">作者：张三, 李四, 王五</p>
-                    <p class="paper-journal">发表于：《计算机科学》2023年第3期</p>
-                    <div class="tags">
-                        <span class="tag">深度学习</span>
-                        <span class="tag">NLP</span>
-                        <span class="tag">人工智能</span>
-                    </div>
+                <div class="paper-meta" id="paper-meta">
+                    <h1 class="paper-title" id="paper-title">PDF论文翻译和对比</h1>
+                    <p class="paper-journal" id="paper-journal">浏览原文和译文</p>
                 </div>
                 <div class="translate-actions">
-                    <button class="btn btn-outline"><i class="fas fa-download"></i> 下载PDF</button>
+                    <button class="btn btn-outline" id="download-pdf-btn"><i class="fas fa-download"></i> 下载PDF</button>
                     <button class="btn btn-outline"><i class="fas fa-share-alt"></i> 分享</button>
-                    <button class="btn btn-outline"><i class="fas fa-star"></i> 收藏</button>
                 </div>
             </div>
         </div>
 
         <div class="container">
-            <div class="translate-toolbar">
-                <div class="toolbar-group">
-                    <button class="btn btn-secondary active"><i class="fas fa-columns"></i> 双栏视图</button>
-                    <button class="btn btn-secondary"><i class="fas fa-align-justify"></i> 单栏视图</button>
+            <!-- 文件信息和状态面板 -->
+            <div class="file-info-panel" id="file-info-panel">
+                <div class="file-info" id="file-info">
+                    <h3 id="file-name">加载中...</h3>
+                    <p id="file-pages">页数: -</p>
+                    <div id="translation-status" class="translation-status status-pending">正在检查翻译状态...</div>
                 </div>
-                <div class="toolbar-group">
-                    <button class="btn btn-secondary"><i class="fas fa-minus"></i></button>
-                    <span>100%</span>
-                    <button class="btn btn-secondary"><i class="fas fa-plus"></i></button>
-                </div>
-                <div class="toolbar-group">
-                    <button class="btn btn-secondary"><i class="fas fa-copy"></i> 复制全部</button>
-                    <button class="btn btn-secondary"><i class="fas fa-edit"></i> 编辑翻译</button>
+                <div class="file-actions" style="display: flex; align-items: center;">
+                    <button id="translate-btn" class="btn btn-primary" style="display: none;">
+                        <i class="fas fa-language"></i> 开始翻译
+                    </button>
+                    <button id="retranslate-btn" class="btn btn-secondary" style="display: none;">
+                        <i class="fas fa-sync"></i> 重新翻译
+                    </button>
                 </div>
             </div>
             
-            <div class="paper-content">
+            <div class="translate-toolbar">
+                <div class="toolbar-group">
+                    <button class="btn btn-secondary active" id="dual-view-btn"><i class="fas fa-columns"></i> 双栏视图</button>
+                    <button class="btn btn-secondary" id="single-view-btn"><i class="fas fa-align-justify"></i> 单栏视图</button>
+                </div>
+                <div class="toolbar-group">
+                    <select id="format-select" class="form-select">
+                        <option value="mono">仅中文版</option>
+                        <option value="dual">中英对照版</option>
+                    </select>
+                    <div class="form-check" style="margin-left: 10px; display: flex; align-items: center;">
+                        <input type="checkbox" id="post-process-check" checked style="margin-right: 5px;">
+                        <label for="post-process-check" style="margin-bottom: 0;">去除斜杠标记</label>
+                </div>
+                </div>
+            </div>
+            
+            <div class="paper-content pdf-view-mode">
                 <div class="content-columns">
                     <div class="content-column original">
                         <div class="column-header">
                             <h3>原文</h3>
                         </div>
-                        <div class="paper-section">
-                            <h2>Abstract</h2>
-                            <p>Deep learning has revolutionized the field of natural language processing (NLP) in recent years. This paper provides a comprehensive overview of the applications of deep learning in various NLP tasks such as text classification, named entity recognition, machine translation, and question answering systems. We discuss the evolution from traditional rule-based and statistical methods to modern neural network approaches, highlighting the performance improvements and challenges in each area. Additionally, we explore recent advancements including transformer-based models like BERT, GPT, and their variants that have set new state-of-the-art results across multiple benchmarks. Finally, we identify ongoing research directions and potential future developments in this rapidly evolving field.</p>
-                        </div>
-                        <div class="paper-section">
-                            <h2>1. Introduction</h2>
-                            <p>Natural Language Processing (NLP) is a field at the intersection of computer science, artificial intelligence, and linguistics focused on the interactions between computers and human language. Over the past decade, deep learning approaches have significantly transformed how NLP tasks are approached and solved, leading to unprecedented improvements in performance across various applications.</p>
-                            <p>Traditional NLP systems relied heavily on hand-crafted features and required extensive domain expertise to design effective models. These systems typically followed a pipeline architecture where each component addressed a specific linguistic level: morphological, syntactic, semantic, and pragmatic analysis. While these approaches achieved reasonable success, they often struggled with the complexity and ambiguity inherent in human language.</p>
-                            <p>The introduction of distributed representations and neural network architectures marked a paradigm shift in NLP. Word embeddings such as Word2Vec (Mikolov et al., 2013) and GloVe (Pennington et al., 2014) enabled more effective representation of words in a continuous vector space, capturing semantic relationships that were difficult to model with discrete representations. This was followed by increasingly sophisticated neural architectures from recurrent neural networks (RNNs) and convolutional neural networks (CNNs) to attention mechanisms and transformer models.</p>
+                        <div class="pdf-container" id="original-pdf-container">
+                            <!-- 原文PDF将在这里显示 -->
                         </div>
                     </div>
                     <div class="content-column translated">
                         <div class="column-header">
                             <h3>译文</h3>
                         </div>
-                        <div class="paper-section">
-                            <h2>摘要</h2>
-                            <p>近年来，深度学习彻底革新了自然语言处理(NLP)领域。本文全面概述了深度学习在文本分类、命名实体识别、机器翻译和问答系统等各种NLP任务中的应用。我们讨论了从传统的基于规则和统计方法到现代神经网络方法的演变，强调了各个领域的性能改进和挑战。此外，我们探讨了最近的进展，包括基于Transformer的模型，如BERT、GPT及其变体，这些模型在多个基准测试中创造了新的最先进结果。最后，我们确定了这一快速发展领域的持续研究方向和潜在的未来发展。</p>
-                        </div>
-                        <div class="paper-section">
-                            <h2>1. 引言</h2>
-                            <p>自然语言处理(NLP)是计算机科学、人工智能和语言学交叉的领域，专注于计算机与人类语言之间的交互。在过去的十年里，深度学习方法显著改变了NLP任务的处理和解决方式，在各种应用中实现了前所未有的性能提升。</p>
-                            <p>传统的NLP系统严重依赖手工特征工程，需要广泛的领域专业知识来设计有效的模型。这些系统通常遵循管道架构，其中每个组件解决特定的语言层次：形态学、句法、语义和语用分析。虽然这些方法取得了合理的成功，但它们常常难以处理人类语言固有的复杂性和歧义性。</p>
-                            <p>分布式表示和神经网络架构的引入标志着NLP的范式转变。Word2Vec（Mikolov等人，2013年）和GloVe（Pennington等人，2014年）等词嵌入技术实现了在连续向量空间中更有效地表示单词，捕获了难以用离散表示建模的语义关系。随后出现了越来越复杂的神经架构，从循环神经网络（RNN）和卷积神经网络（CNN）到注意力机制和Transformer模型。</p>
+                        <div class="pdf-container" id="translated-pdf-container">
+                            <!-- 译文PDF将在这里显示 -->
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="pagination">
-                <button class="btn btn-secondary"><i class="fas fa-chevron-left"></i> 上一页</button>
-                <div class="page-numbers">
-                    <span class="current-page">1</span> / <span class="total-pages">36</span>
-                </div>
-                <button class="btn btn-primary">下一页 <i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
     </main>
 
     <footer>
         <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>PaperTrans</h3>
-                    <p>专业的学术论文翻译工具，为科研工作者提供高效便捷的翻译服务。</p>
-                    <div class="social-icons">
-                        <a href="#"><i class="fab fa-weixin"></i></a>
-                        <a href="#"><i class="fab fa-weibo"></i></a>
-                        <a href="#"><i class="fab fa-github"></i></a>
-                    </div>
-                </div>
-                <div class="footer-section">
-                    <h3>快速链接</h3>
-                    <ul>
-                        <li><a href="#">首页</a></li>
-                        <li><a href="#">使用指南</a></li>
-                        <li><a href="#">常见问题</a></li>
-                        <li><a href="#">联系我们</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h3>联系我们</h3>
-                    <p><i class="fas fa-envelope"></i> support@papertrans.com</p>
-                    <p><i class="fas fa-phone"></i> 400-123-4567</p>
-                </div>
-            </div>
             <div class="footer-bottom">
                 <p>&copy; 2023 PaperTrans. 保留所有权利。</p>
             </div>
         </div>
     </footer>
 
-    <script src="js/script.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 移除上传相关变量
+            const translateBtn = document.getElementById('translate-btn');
+            const retranslateBtn = document.getElementById('retranslate-btn');
+            const translationStatus = document.getElementById('translation-status');
+            const originalPdfContainer = document.getElementById('original-pdf-container');
+            const translatedPdfContainer = document.getElementById('translated-pdf-container');
+            const dualViewBtn = document.getElementById('dual-view-btn');
+            const singleViewBtn = document.getElementById('single-view-btn');
+            const formatSelect = document.getElementById('format-select');
+            const postProcessCheck = document.getElementById('post-process-check');
+            const fileInfoPanel = document.getElementById('file-info-panel');
+            const fileInfo = document.getElementById('file-info');
+            const fileName = document.getElementById('file-name');
+            const filePages = document.getElementById('file-pages');
+            
+            let currentTaskId = null;
+            let pdfData = null;
+            let translationAvailable = false;
+            
+            // 获取URL中的task_id参数
+            const urlParams = new URLSearchParams(window.location.search);
+            currentTaskId = urlParams.get('task_id');
+            
+            if (!currentTaskId) {
+                // 如果URL中没有task_id，显示错误并提供返回主页的链接
+                fileInfoPanel.innerHTML = `
+                    <div class="file-error">
+                        <h3>未找到文档</h3>
+                        <p>无法找到要翻译的PDF文件。请返回首页上传文件。</p>
+                        <a href="index.html" class="btn btn-primary">返回首页</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 加载PDF信息和检查翻译状态
+            loadPdfInfo(currentTaskId);
+            
+            // 加载PDF信息函数
+            function loadPdfInfo(taskId) {
+                updateStatus('pending', '正在加载文档信息...');
+                
+                // 获取文件信息
+                fetch(`/api/tasks/${taskId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            if (response.status === 404) {
+                                // 任务不存在时尝试恢复任务
+                                console.log("任务未找到，尝试通过检查翻译状态恢复任务");
+                                // 先检查翻译状态，这会尝试从结果目录恢复任务
+                                return fetch(`/api/check_translation/${taskId}`)
+                                    .then(checkResponse => {
+                                        if (!checkResponse.ok) {
+                                            throw new Error('获取任务信息失败');
+                                        }
+                                        return checkResponse.json();
+                                    })
+                                    .then(data => {
+                                        if (data.exists) {
+                                            console.log("成功从结果目录恢复任务，重新加载任务信息");
+                                            // 再次尝试获取任务信息
+                                            return fetch(`/api/tasks/${taskId}`).then(r => {
+                                                if (!r.ok) {
+                                                    throw new Error('恢复任务后仍无法获取任务信息');
+                                                }
+                                                return r.json();
+                                            });
+                                        } else {
+                                            throw new Error('任务不存在，无法恢复');
+                                        }
+                                    });
+                            } else {
+                                throw new Error('获取任务信息失败');
+                            }
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // 更新文件信息
+                        fileName.textContent = data.filename;
+                        
+                        // 加载原始PDF
+                        loadOriginalPdf(taskId);
+                        
+                        // 检查是否已有翻译
+                        checkTranslationStatus(taskId);
+                    })
+                    .catch(error => {
+                        console.error('加载文档信息出错:', error);
+                        updateStatus('failed', '加载文档信息失败: ' + error.message);
+                        
+                        // 如果是恢复任务失败，可以尝试直接访问文件
+                        console.log("尝试直接加载PDF文件");
+                        loadOriginalPdf(taskId);
+                        checkTranslationStatus(taskId);
+                    });
+            }
+            
+            // 加载原始PDF
+            function loadOriginalPdf(taskId) {
+                loadPdf(`/api/files/${taskId}`, originalPdfContainer);
+            }
+            
+            // 检查翻译状态
+            function checkTranslationStatus(taskId) {
+                updateStatus('pending', '正在检查翻译状态...');
+                
+                // 使用检查翻译状态的接口，而不是直接尝试加载PDF
+                fetch(`/api/check_translation/${taskId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('检查翻译状态失败');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.exists) {
+                            // 已有翻译
+                            translationAvailable = true;
+                            updateStatus('completed', '文档已翻译');
+                            translateBtn.style.display = 'none';
+                            retranslateBtn.style.display = 'inline-block';
+                            
+                            // 加载翻译后的PDF
+                            loadTranslatedPdf(taskId);
+                        } else {
+                            // 没有翻译
+                            translationAvailable = false;
+                            updateStatus('pending', '文档尚未翻译');
+                            translateBtn.style.display = 'inline-block';
+                            retranslateBtn.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('检查翻译状态出错:', error);
+                        updateStatus('failed', '检查翻译状态失败: ' + error.message);
+                        
+                        // 出错时尝试老办法检查
+                        fallbackCheckTranslation(taskId);
+                    });
+            }
+            
+            // 备用检查方法，尝试直接加载PDF
+            function fallbackCheckTranslation(taskId) {
+                // 尝试加载翻译后的PDF
+                fetch(`/api/translated_files/${taskId}/dual.pdf`)
+                    .then(response => {
+                        if (!response.ok) {
+                            // 没有找到翻译文件
+                            translationAvailable = false;
+                            updateStatus('pending', '文档尚未翻译');
+                            translateBtn.style.display = 'inline-block';
+                            retranslateBtn.style.display = 'none';
+                            return null;
+                        }
+                        // 找到翻译文件
+                        translationAvailable = true;
+                        updateStatus('completed', '文档已翻译');
+                        translateBtn.style.display = 'none';
+                        retranslateBtn.style.display = 'inline-block';
+                        return response;
+                    })
+                    .then(response => {
+                        if (response) {
+                            // 如果有翻译文件，加载它
+                            loadTranslatedPdf(taskId);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('备用检查翻译状态出错:', error);
+                        updateStatus('failed', '检查翻译状态失败: ' + error.message);
+                    });
+            }
+            
+            // 加载翻译后的PDF
+            function loadTranslatedPdf(taskId) {
+                const format = formatSelect.value;
+                loadPdf(`/api/translated_files/${taskId}/${format}.pdf`, translatedPdfContainer);
+            }
+            
+            // 点击翻译按钮
+            translateBtn.addEventListener('click', function() {
+                startTranslation(currentTaskId, false);
+            });
+            
+            // 点击重新翻译按钮
+            retranslateBtn.addEventListener('click', function() {
+                if (confirm('确定要重新翻译该文档吗？')) {
+                    startTranslation(currentTaskId, true);
+                }
+            });
+            
+            // 开始翻译过程
+            function startTranslation(taskId, isRetranslation) {
+                updateStatus('processing', '正在翻译中，请稍候...');
+                
+                // 获取用户选择的格式和后处理选项
+                const selectedFormat = formatSelect.value;
+                const postProcess = postProcessCheck.checked;
+                
+                // 发送请求到后端api
+                fetch('/api/translate_document', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        task_id: taskId,
+                        provider: 'deepseek',
+                        model: 'deepseek-chat',
+                        source_lang: 'en',
+                        target_lang: 'zh',
+                        format: selectedFormat,
+                        post_process: postProcess,
+                        force: isRetranslation  // 如果是重新翻译，强制执行
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 更新状态和显示翻译后的PDF
+                    updateStatus('completed', '翻译完成！');
+                    translationAvailable = true;
+                    translateBtn.style.display = 'none';
+                    retranslateBtn.style.display = 'inline-block';
+                    
+                    // 加载翻译后的PDF
+                    loadTranslatedPdf(taskId);
+                })
+                .catch(error => {
+                    console.error('翻译出错:', error);
+                    updateStatus('failed', '翻译失败: ' + error.message);
+                });
+            }
+            
+            // 更新状态显示
+            function updateStatus(status, message) {
+                translationStatus.className = 'translation-status status-' + status;
+                translationStatus.textContent = message;
+            }
+            
+            // 加载PDF函数
+            function loadPdf(url, container) {
+                console.log(`开始加载PDF: ${url} -> ${container.id}`);
+                
+                // 清空容器
+                container.innerHTML = '';
+                
+                // 添加加载指示器
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'loading-indicator';
+                loadingIndicator.innerHTML = `
+                    <div class="loading-spinner"></div>
+                    <span style="margin-left: 10px;">正在加载PDF...</span>
+                `;
+                container.appendChild(loadingIndicator);
+                
+                // 创建包装div
+                const wrapper = document.createElement('div');
+                wrapper.style.width = '100%';
+                wrapper.style.height = '100%';
+                wrapper.style.position = 'relative';
+                
+                // 创建iframe - 使用最简单的方式
+                const iframe = document.createElement('iframe');
+                
+                // 基本属性设置 - 移除可能导致问题的sandbox属性
+                iframe.setAttribute('scrolling', 'yes');
+                iframe.setAttribute('allowfullscreen', 'true');
+                iframe.setAttribute('allow', 'fullscreen');
+                
+                // 设置PDF参数，确保参数正确
+                const pdfJsParams = 'toolbar=0&navpanes=0&scrollbar=0&page=1&view=FitH';
+                iframe.src = url + '#' + pdfJsParams;
+                
+                iframe.className = 'pdf-iframe';
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.id = container.id + '-iframe';
+                
+                // 添加到包装div中
+                wrapper.appendChild(iframe);
+                
+                // 将包装div添加到容器
+                container.appendChild(wrapper);
+                
+                // 处理iframe加载完成事件
+                iframe.onload = function() {
+                    console.log(`PDF加载完成: ${url} -> ${container.id}`);
+                    
+                    // 移除加载指示器
+                    const indicator = container.querySelector('.loading-indicator');
+                    if (indicator) indicator.remove();
+                    
+                    // 添加导航控制按钮
+                    addNavigationControls(container);
+                    
+                    // 确保PDF容器高度正确，以启用滚动
+                    ensurePdfContainerHeight(container);
+                };
+                
+                // 添加错误处理
+                iframe.onerror = function() {
+                    console.error(`PDF加载失败: ${url}`);
+                    
+                    // 移除加载指示器
+                    const indicator = container.querySelector('.loading-indicator');
+                    if (indicator) indicator.remove();
+                    
+                    // 显示错误消息
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'error-message';
+                    errorMsg.innerHTML = `
+                        <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>
+                        PDF加载失败，请重试
+                    `;
+                    container.appendChild(errorMsg);
+                };
+            }
+            
+            // 确保PDF容器高度正确
+            function ensurePdfContainerHeight(container) {
+                // 检查容器是否有足够高度启用滚动
+                if (container.clientHeight < 100) {
+                    console.warn(`PDF容器高度不足: ${container.clientHeight}px，尝试调整...`);
+                    container.style.minHeight = '500px';
+                }
+                
+                // 设置iframe样式确保其撑满容器
+                const iframe = container.querySelector('iframe');
+                if (iframe) {
+                    iframe.style.height = '100%';
+                    iframe.style.width = '100%';
+                    iframe.style.display = 'block';
+                }
+            }
+            
+            // 设置点击导航
+            function setupClickNavigation(originalContainer, translatedContainer) {
+                console.log('点击导航功能已禁用');
+            }
+            
+            // 设置键盘导航
+            function setupKeyboardNavigation() {
+                // 键盘导航仅针对单个PDF容器
+                const originalContainer = document.getElementById('original-pdf-container');
+                if (!originalContainer) return;
+                
+                // 键盘导航
+                document.addEventListener('keydown', function(e) {
+                    const scrollStep = 100; // 每次滚动的像素
+                    
+                    switch (e.key) {
+                        case 'ArrowUp':
+                            originalContainer.scrollTop -= scrollStep;
+                            e.preventDefault();
+                            break;
+                        case 'ArrowDown':
+                            originalContainer.scrollTop += scrollStep;
+                            e.preventDefault();
+                            break;
+                        case 'Home':
+                            originalContainer.scrollTop = 0;
+                            e.preventDefault();
+                            break;
+                        case 'End':
+                            originalContainer.scrollTop = originalContainer.scrollHeight;
+                            e.preventDefault();
+                            break;
+                        case ' ': // 空格
+                            if (e.shiftKey) {
+                                originalContainer.scrollTop -= originalContainer.clientHeight * 0.9;
+                            } else {
+                                originalContainer.scrollTop += originalContainer.clientHeight * 0.9;
+                            }
+                            e.preventDefault();
+                            break;
+                    }
+                });
+                
+                console.log('✅ 键盘导航设置完成');
+            }
+            
+            // 视图切换
+            dualViewBtn.addEventListener('click', function() {
+                dualViewBtn.classList.add('active');
+                singleViewBtn.classList.remove('active');
+                document.querySelector('.content-columns').style.flexDirection = 'row';
+            });
+            
+            singleViewBtn.addEventListener('click', function() {
+                singleViewBtn.classList.add('active');
+                dualViewBtn.classList.remove('active');
+                document.querySelector('.content-columns').style.flexDirection = 'column';
+            });
+            
+            // 格式选择变化事件处理
+            formatSelect.addEventListener('change', function() {
+                const selectedFormat = formatSelect.value;
+                // 仅当选择"仅中文版"时启用后处理选项
+                if (selectedFormat === 'dual') {
+                    postProcessCheck.disabled = true;
+                    postProcessCheck.parentElement.style.opacity = 0.5;
+                } else {
+                    postProcessCheck.disabled = false;
+                    postProcessCheck.parentElement.style.opacity = 1;
+                }
+                
+                // 如果已经有翻译，更新显示的PDF
+                if (translationAvailable) {
+                    loadTranslatedPdf(currentTaskId);
+                }
+            });
+            
+            // 初始化时设置后处理选项状态
+            formatSelect.dispatchEvent(new Event('change'));
+
+            // 设置同步事件 - 保留此函数但只应用于页码同步
+            function setupSyncEvents() {
+                // 全局键盘事件处理
+                if (!window.keyboardEventsSetup) {
+                    window.keyboardEventsSetup = true;
+                    
+                    document.addEventListener('keydown', function(e) {
+                        const inputs = document.querySelectorAll('.page-input');
+                        if (!inputs.length) return;
+                        
+                        const currentPage = parseInt(inputs[0].value) || 1;
+                        
+                        // 左右箭头切换页面
+                        if (e.key === 'ArrowLeft') {
+                            const newPage = Math.max(1, currentPage - 1);
+                            syncPage(newPage);
+                            e.preventDefault();
+                        } else if (e.key === 'ArrowRight') {
+                            syncPage(currentPage + 1);
+                            e.preventDefault();
+                        }
+                        
+                        // PageUp/PageDown
+                        if (e.key === 'PageUp') {
+                            const newPage = Math.max(1, currentPage - 1);
+                            syncPage(newPage);
+                            e.preventDefault();
+                        } else if (e.key === 'PageDown') {
+                            syncPage(currentPage + 1);
+                            e.preventDefault();
+                        }
+                    });
+                    
+                    console.log('✅ 键盘控制事件设置完成');
+                }
+                
+                // 同步其他控制按钮的状态变化
+                document.querySelectorAll('.page-input').forEach(input => {
+                    input.addEventListener('change', function() {
+                        const newPage = parseInt(this.value) || 1;
+                        syncPage(newPage);
+                    });
+                });
+                
+                console.log('✅ 页码同步事件设置完成');
+            }
+
+            // 添加PDF浏览控制
+            function addNavigationControls(container) {
+                // 检查是否所有PDF都已加载
+                const allLoaded = document.querySelectorAll('.pdf-iframe').length >= 2;
+                
+                // 如果已存在控制按钮，则不重复添加
+                if (container.querySelector('.pdf-controls')) return;
+                
+                // 创建控制按钮容器
+                const controlsDiv = document.createElement('div');
+                controlsDiv.className = 'pdf-controls';
+                controlsDiv.style.position = 'absolute';
+                controlsDiv.style.bottom = '20px';
+                controlsDiv.style.left = '50%';
+                controlsDiv.style.transform = 'translateX(-50%)';
+                controlsDiv.style.zIndex = '100';
+                controlsDiv.style.background = 'rgba(255,255,255,0.8)';
+                controlsDiv.style.padding = '8px 12px';
+                controlsDiv.style.borderRadius = '4px';
+                controlsDiv.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+                controlsDiv.style.display = 'flex';
+                controlsDiv.style.alignItems = 'center';
+                controlsDiv.style.gap = '10px';
+                
+                // 创建按钮
+                controlsDiv.innerHTML = `
+                    <button class="btn-prev" title="上一页"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info">第 <input type="number" min="1" value="1" class="page-input" style="width: 40px; text-align: center;"> 页</span>
+                    <button class="btn-next" title="下一页"><i class="fas fa-chevron-right"></i></button>
+                `;
+                
+                // 添加按钮点击事件
+                const btnPrev = controlsDiv.querySelector('.btn-prev');
+                const btnNext = controlsDiv.querySelector('.btn-next');
+                const pageInput = controlsDiv.querySelector('.page-input');
+                
+                btnPrev.addEventListener('click', function() {
+                    const newPage = Math.max(1, parseInt(pageInput.value) - 1);
+                    pageInput.value = newPage;
+                    syncPage(newPage);
+                });
+                
+                btnNext.addEventListener('click', function() {
+                    const newPage = parseInt(pageInput.value) + 1;
+                    pageInput.value = newPage;
+                    syncPage(newPage);
+                });
+                
+                pageInput.addEventListener('change', function() {
+                    const newPage = Math.max(1, parseInt(pageInput.value));
+                    syncPage(newPage);
+                });
+                
+                // 添加到容器
+                container.appendChild(controlsDiv);
+                
+                // 如果所有PDF都已加载，设置同步事件
+                if (allLoaded) {
+                    setupSyncEvents();
+                }
+            }
+            
+            // 同步页面
+            function syncPage(pageNumber) {
+                const iframes = document.querySelectorAll('.pdf-iframe');
+                
+                iframes.forEach(iframe => {
+                    try {
+                        // 从iframe的src获取基础URL，并添加新的页码参数
+                        const currentSrc = iframe.src;
+                        const baseUrl = currentSrc.split('#')[0];
+                        const hashPart = currentSrc.split('#')[1];
+                        
+                        // 分析当前参数，保留除了page以外的所有参数
+                        const params = new URLSearchParams();
+                        if (hashPart) {
+                            hashPart.split('&').forEach(param => {
+                                const [key, value] = param.split('=');
+                                if (key !== 'page') {
+                                    params.append(key, value);
+                                }
+                            });
+                        }
+                        
+                        // 添加新的page参数
+                        params.set('page', pageNumber);
+                        
+                        // 构建新的URL并设置
+                        const newSrc = `${baseUrl}#${params.toString()}`;
+                        iframe.src = newSrc;
+                        
+                        console.log(`切换到第 ${pageNumber} 页: ${newSrc}`);
+                    } catch (err) {
+                        console.error('切换页面时出错:', err);
+                    }
+                });
+                
+                // 更新所有页码输入框
+                document.querySelectorAll('.page-input').forEach(input => {
+                    input.value = pageNumber;
+                });
+            }
+        });
+    </script>
 </body>
 </html> 
