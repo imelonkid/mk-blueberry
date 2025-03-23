@@ -35,8 +35,27 @@ fi
 
 # 激活Python 3.10环境
 export PATH="/Users/melonkid/opt/anaconda3/bin:$PATH"
-source /Users/melonkid/opt/anaconda3/etc/profile.d/conda.sh
-conda activate py310
+
+# 检查conda.sh文件是否存在，使用更安全的方式激活conda环境
+CONDA_SH="/Users/melonkid/opt/anaconda3/etc/profile.d/conda.sh"
+if [ -f "$CONDA_SH" ]; then
+    source "$CONDA_SH"
+    conda activate py310
+else
+    echo -e "${YELLOW}警告: 未找到conda.sh文件，尝试直接激活环境...${NC}"
+    # 尝试直接使用conda命令
+    if command -v conda >/dev/null 2>&1; then
+        conda activate py310 || true
+    else
+        echo -e "${YELLOW}警告: 未找到conda命令，使用系统Python继续...${NC}"
+    fi
+    
+    # 确保我们有Python可用
+    if ! command -v python >/dev/null 2>&1; then
+        echo -e "${RED}错误: 无法找到Python命令，请确保Python已安装${NC}"
+        exit 1
+    fi
+fi
 
 # 设置API密钥（如果.env中未设置则使用默认值）
 if [ -z "${DEEPSEEK_API_KEY}" ]; then
