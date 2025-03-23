@@ -115,21 +115,142 @@ fi
 
 # 检查pdf2zh命令是否可用
 echo -e "${BLUE}检查pdf2zh命令是否可用...${NC}"
-if command -v pdf2zh >/dev/null 2>&1; then
-    echo -e "${GREEN}pdf2zh命令可用: $(which pdf2zh)${NC}"
-else
+
+# 记录系统信息
+echo -e "${BLUE}系统信息:${NC}"
+uname -a
+cat /etc/os-release 2>/dev/null || echo "无法获取OS发行版信息"
+
+# 检查多个可能的pdf2zh路径
+PDF2ZH_PATHS=(
+    "pdf2zh"
+    "$HOME/.local/bin/pdf2zh"
+    "$SCRIPT_DIR/venv/bin/pdf2zh"
+    "/usr/local/bin/pdf2zh"
+    "/root/.local/bin/pdf2zh"
+    "$SCRIPT_DIR/bin/pdf2zh"
+)
+
+PDF2ZH_FOUND=false
+for path in "${PDF2ZH_PATHS[@]}"; do
+    if command -v "$path" >/dev/null 2>&1 || [ -x "$path" ]; then
+        echo -e "${GREEN}pdf2zh命令可用: $path${NC}"
+        PDF2ZH_FOUND=true
+        # 将此路径设置为环境变量，供后端使用
+        export PDF2ZH_PATH="$path"
+        break
+    else
+        echo -e "${YELLOW}尝试的路径无效: $path${NC}"
+    fi
+done
+
+if [ "$PDF2ZH_FOUND" = false ]; then
     echo -e "${YELLOW}警告: pdf2zh命令不可用，尝试安装...${NC}"
-    pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate || {
-        echo -e "${RED}安装pdf2zh失败。服务可能无法正常工作。${NC}"
-        echo -e "${YELLOW}请手动执行: pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate${NC}"
+    
+    # 确保Python环境可用
+    if ! command -v python3 >/dev/null 2>&1; then
+        if command -v python >/dev/null 2>&1; then
+            PY_CMD="python"
+            echo -e "${YELLOW}未找到python3命令，使用python命令${NC}"
+        else
+            echo -e "${RED}错误: 未找到python或python3命令，无法继续${NC}"
+            exit 1
+        fi
+    else
+        PY_CMD="python3"
+    fi
+    
+    # 输出Python版本
+    $PY_CMD --version
+    
+    # 检查pip是否可用
+    if ! $PY_CMD -m pip >/dev/null 2>&1; then
+        echo -e "${RED}错误: pip不可用，请安装pip${NC}"
+        
+        # 针对CentOS系统提供安装指南
+        if [ -f /etc/centos-release ] || grep -q "CentOS" /etc/os-release 2>/dev/null; then
+            echo -e "${YELLOW}检测到CentOS系统，尝试安装pip...${NC}"
+            echo -e "${YELLOW}您可能需要执行以下命令:${NC}"
+            echo -e "  sudo yum install -y python3-pip  # 对于Python 3"
+            echo -e "或"
+            echo -e "  sudo yum install -y python-pip   # 对于Python 2"
+        fi
+        
+        exit 1
+    fi
+    
+    # 尝试安装pdf2zh - 先使用--user方式安装
+    echo -e "${YELLOW}尝试使用--user方式安装pdf2zh...${NC}"
+    $PY_CMD -m pip install --user -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate || {
+        echo -e "${YELLOW}使用--user方式安装失败，尝试普通安装...${NC}"
+        $PY_CMD -m pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate || {
+            echo -e "${RED}安装pdf2zh失败。服务可能无法正常工作。${NC}"
+            echo -e "${YELLOW}请手动执行: pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate${NC}"
+        }
     }
     
-    # 再次检查
-    if command -v pdf2zh >/dev/null 2>&1; then
-        echo -e "${GREEN}pdf2zh命令安装成功: $(which pdf2zh)${NC}"
+    # 如果安装成功但找不到命令，可能是因为~/.local/bin不在PATH中，尝试修复
+    if ! command -v pdf2zh >/dev/null 2>&1; then
+        echo -e "${YELLOW}pdf2zh已安装但命令不在PATH中，检查可能的位置...${NC}"
+        
+        # 检查~/.local/bin
+        USER_LOCAL_BIN="$HOME/.local/bin"
+        if [ -x "$USER_LOCAL_BIN/pdf2zh" ]; then
+            echo -e "${GREEN}在$USER_LOCAL_BIN找到pdf2zh${NC}"
+            # 将此路径添加到PATH
+            export PATH="$USER_LOCAL_BIN:$PATH"
+            export PDF2ZH_PATH="$USER_LOCAL_BIN/pdf2zh"
+            echo -e "${GREEN}已将$USER_LOCAL_BIN添加到PATH${NC}"
+        else
+            echo -e "${YELLOW}在$USER_LOCAL_BIN中未找到pdf2zh${NC}"
+            
+            # 查找site-packages中的pdf2zh脚本
+            SITE_PACKAGES=$($PY_CMD -c "import site; print(site.getusersitepackages())")
+            echo -e "${YELLOW}检查site-packages: $SITE_PACKAGES${NC}"
+            
+            if [ -d "$SITE_PACKAGES" ]; then
+                # 查找paper2translate包
+                if [ -d "$SITE_PACKAGES/paper2translate" ]; then
+                    echo -e "${YELLOW}找到paper2translate包，创建直接执行入口...${NC}"
+                    # 在当前目录的bin文件夹下创建pdf2zh脚本
+                    mkdir -p "$SCRIPT_DIR/bin"
+                    WRAPPER_SCRIPT="$SCRIPT_DIR/bin/pdf2zh"
+                    
+                    # 创建wrapper脚本
+                    cat > "$WRAPPER_SCRIPT" << EOL
+#!/bin/sh
+$PY_CMD -m paper2translate.cli "\$@"
+EOL
+                    chmod +x "$WRAPPER_SCRIPT"
+                    echo -e "${GREEN}创建了wrapper脚本: $WRAPPER_SCRIPT${NC}"
+                    export PDF2ZH_PATH="$WRAPPER_SCRIPT"
+                else
+                    echo -e "${YELLOW}未找到paper2translate包${NC}"
+                fi
+            else
+                echo -e "${YELLOW}未找到site-packages目录${NC}"
+            fi
+        fi
     else
-        echo -e "${YELLOW}pdf2zh命令仍不可用，但将继续启动服务${NC}"
+        # 如果命令可用，获取其路径
+        PDF2ZH_PATH=$(command -v pdf2zh)
+        echo -e "${GREEN}pdf2zh命令安装成功: $PDF2ZH_PATH${NC}"
+        export PDF2ZH_PATH="$PDF2ZH_PATH"
     fi
+fi
+
+# 再次检查
+if command -v pdf2zh >/dev/null 2>&1 || [ ! -z "$PDF2ZH_PATH" ]; then
+    if [ ! -z "$PDF2ZH_PATH" ]; then
+        echo -e "${GREEN}将使用pdf2zh路径: $PDF2ZH_PATH${NC}"
+    else
+        PDF2ZH_PATH=$(command -v pdf2zh)
+        echo -e "${GREEN}pdf2zh命令可用: $PDF2ZH_PATH${NC}"
+        export PDF2ZH_PATH="$PDF2ZH_PATH"
+    fi
+else
+    echo -e "${YELLOW}pdf2zh命令仍不可用，服务可能无法正常工作${NC}"
+    echo -e "${YELLOW}将尝试在后端中直接找到或安装pdf2zh${NC}"
 fi
 
 # 设置API密钥（如果.env中未设置则使用默认值）

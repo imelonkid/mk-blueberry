@@ -81,19 +81,47 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
         # 构建pdf2zh命令 - 根据pdf2zh的帮助信息调整参数格式
         # 尝试多种方式找到pdf2zh命令
         pdf2zh_cmd_paths = [
+            os.environ.get('PDF2ZH_PATH', ''),  # 从环境变量获取（由start.sh设置）
             "pdf2zh",  # 系统路径
             os.path.expanduser("~/.local/bin/pdf2zh"),  # 用户安装路径
             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "venv/bin/pdf2zh"),  # 虚拟环境路径
-            "/usr/local/bin/pdf2zh"  # 全局安装路径
+            "/usr/local/bin/pdf2zh",  # 全局安装路径
+            "/root/.local/bin/pdf2zh",  # root用户安装路径
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "bin/pdf2zh")  # 当前目录bin文件夹
         ]
+        
+        # 过滤掉空路径
+        pdf2zh_cmd_paths = [path for path in pdf2zh_cmd_paths if path]
+        
+        # 检查是否存在环境变量设置的路径
+        if os.environ.get('PDF2ZH_PATH'):
+            logger.info(f"从环境变量获取pdf2zh路径: {os.environ.get('PDF2ZH_PATH')}")
+        
+        # 系统信息记录，用于排查不同系统上的问题
+        try:
+            import platform
+            system_info = {
+                "系统": platform.system(),
+                "发行版": platform.release(),
+                "版本": platform.version(),
+                "架构": platform.machine(),
+                "Python版本": platform.python_version()
+            }
+            logger.info(f"系统信息: {json.dumps(system_info, ensure_ascii=False)}")
+        except Exception as e:
+            logger.warning(f"获取系统信息时出错: {str(e)}")
         
         # 检查哪个pdf2zh路径存在并可执行
         pdf2zh_path = None
         for cmd_path in pdf2zh_cmd_paths:
-            if os.path.exists(cmd_path) and os.access(cmd_path, os.X_OK):
-                pdf2zh_path = cmd_path
-                logger.info(f"找到pdf2zh命令: {pdf2zh_path}")
-                break
+            logger.info(f"检查pdf2zh路径: {cmd_path}")
+            if os.path.exists(cmd_path):
+                if os.access(cmd_path, os.X_OK):
+                    pdf2zh_path = cmd_path
+                    logger.info(f"找到可执行的pdf2zh命令: {pdf2zh_path}")
+                    break
+                else:
+                    logger.warning(f"文件存在但不可执行: {cmd_path}")
             elif " " not in cmd_path and shutil.which(cmd_path):  # 检查系统路径中的命令
                 pdf2zh_path = shutil.which(cmd_path)
                 logger.info(f"从系统路径找到pdf2zh命令: {pdf2zh_path}")
@@ -108,6 +136,7 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                 logger.info(f"当前Python路径: {python_path}")
                 
                 # 检查pip是否可用
+                logger.info("检查pip是否可用...")
                 pip_check = subprocess.run(
                     [python_path, "-m", "pip", "--version"],
                     stdout=subprocess.PIPE,
@@ -118,32 +147,111 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                     logger.info(f"pip可用: {pip_check.stdout.strip()}")
                     
                     # 检查pdf2zh包是否已安装
+                    logger.info("检查pdf2zh包是否已安装...")
                     pip_list = subprocess.run(
                         [python_path, "-m", "pip", "list"],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True
                     )
+                    logger.debug(f"pip list输出: {pip_list.stdout}")
+                    
                     if "paper2translate" in pip_list.stdout or "pdf2zh" in pip_list.stdout:
                         logger.info("pdf2zh包已安装，但命令不可用，可能是PATH问题")
+                        
+                        # 尝试找到安装的包路径
+                        try:
+                            import site
+                            user_site = site.getusersitepackages()
+                            logger.info(f"用户site-packages路径: {user_site}")
+                            
+                            # 检查可能的bin目录
+                            bin_paths = [
+                                os.path.join(os.path.dirname(user_site), "bin"),
+                                os.path.join(os.path.dirname(os.path.dirname(user_site)), "bin")
+                            ]
+                            
+                            for bin_path in bin_paths:
+                                if os.path.exists(bin_path):
+                                    logger.info(f"检查bin目录: {bin_path}")
+                                    if os.path.exists(os.path.join(bin_path, "pdf2zh")):
+                                        pdf2zh_path = os.path.join(bin_path, "pdf2zh")
+                                        logger.info(f"在bin目录找到pdf2zh: {pdf2zh_path}")
+                                        break
+                        except Exception as e:
+                            logger.exception(f"查找site-packages时出错: {str(e)}")
                     else:
                         logger.warning("pdf2zh包未安装，尝试安装...")
                         # 尝试安装pdf2zh
                         install_result = subprocess.run(
-                            [python_path, "-m", "pip", "install", "-e", "git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate"],
+                            [python_path, "-m", "pip", "install", "--user", "-e", "git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate"],
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             text=True
                         )
+                        logger.info(f"安装输出: {install_result.stdout}")
+                        if install_result.stderr:
+                            logger.warning(f"安装警告/错误: {install_result.stderr}")
+                            
                         if install_result.returncode == 0:
                             logger.info("pdf2zh安装成功")
                             # 重新检查命令
                             pdf2zh_path = shutil.which("pdf2zh")
+                            if pdf2zh_path:
+                                logger.info(f"安装后找到pdf2zh命令: {pdf2zh_path}")
+                            else:
+                                logger.warning("安装成功，但仍然找不到pdf2zh命令")
+                                
+                                # 尝试在.local/bin中查找
+                                local_bin_path = os.path.expanduser("~/.local/bin/pdf2zh")
+                                if os.path.exists(local_bin_path):
+                                    pdf2zh_path = local_bin_path
+                                    logger.info(f"在.local/bin中找到pdf2zh: {pdf2zh_path}")
                         else:
                             logger.error(f"pdf2zh安装失败: {install_result.stderr}")
+                else:
+                    logger.error(f"pip不可用: {pip_check.stderr}")
             except Exception as e:
                 logger.exception(f"检查和安装pdf2zh时出错: {str(e)}")
             
+            # 如果仍然找不到，检查几种常见的实现方式
+            if not pdf2zh_path:
+                logger.warning("尝试在Python路径中搜索pdf2zh模块...")
+                try:
+                    # 检查site-packages中可能的入口点脚本
+                    result = subprocess.run(
+                        [python_path, "-c", "import importlib.util; import site; import os; print(','.join([p for p in site.getsitepackages()])+ ',' + site.getusersitepackages())"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    
+                    if result.returncode == 0:
+                        site_packages = result.stdout.strip().split(',')
+                        for site_pkg in site_packages:
+                            logger.info(f"检查site-package路径: {site_pkg}")
+                            # 检查是否有paper2translate或pdf2zh包
+                            for pkg_name in ['paper2translate', 'pdf2zh']:
+                                pkg_path = os.path.join(site_pkg, pkg_name)
+                                if os.path.exists(pkg_path):
+                                    logger.info(f"找到包目录: {pkg_path}")
+                                    # 可能的入口点脚本
+                                    script_paths = [
+                                        os.path.join(pkg_path, "cli.py"),
+                                        os.path.join(pkg_path, "main.py"),
+                                        os.path.join(pkg_path, "__main__.py"),
+                                        os.path.join(pkg_path, "pdf2zh.py")
+                                    ]
+                                    for script in script_paths:
+                                        if os.path.exists(script):
+                                            logger.info(f"找到可能的入口点脚本: {script}")
+                                            # 如果找到脚本，可以直接用Python执行它
+                                            pdf2zh_path = f"{python_path} {script}"
+                                            logger.info(f"将使用Python直接执行脚本: {pdf2zh_path}")
+                                            break
+                except Exception as e:
+                    logger.exception(f"搜索pdf2zh模块时出错: {str(e)}")
+                
             # 如果仍然找不到，使用默认命令并记录警告
             if not pdf2zh_path:
                 logger.warning("无法找到或安装pdf2zh命令，将使用默认'pdf2zh'命令，可能会失败")
@@ -160,21 +268,56 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
             logger.warning("PATH环境变量未设置")
         if 'OPENAI_API_KEY' not in env and 'DEEPSEEK_API_KEY' not in env:
             logger.warning("未找到OPENAI_API_KEY或DEEPSEEK_API_KEY环境变量")
-        
+            
+        # 检查Python可执行文件是否在PATH中
+        python_dirs = []
+        if sys.executable:
+            python_dir = os.path.dirname(sys.executable)
+            if python_dir not in env.get('PATH', ''):
+                logger.warning(f"Python目录不在PATH中: {python_dir}")
+                # 添加到PATH
+                if 'PATH' in env:
+                    env['PATH'] = f"{python_dir}:{env['PATH']}"
+                else:
+                    env['PATH'] = python_dir
+                logger.info(f"已将Python目录添加到PATH: {env['PATH']}")
+                python_dirs.append(python_dir)
+                
         # 构建命令
-        pdf2zh_cmd = [
-            pdf2zh_path,
-            pdf_path,  # 文件路径作为位置参数
-            "--lang-in", source_lang,
-            "--lang-out", target_lang,
-            "--service", f"{provider}:{model}" if model else provider,
-            "--output", result_folder,  # 指定输出目录而不是文件
-            "--thread", "2",
-            "--debug"  # 添加调试标志
-        ]
+        # 判断pdf2zh_path是否包含python调用，如果是，则需要特殊处理
+        if pdf2zh_path.startswith(sys.executable) or " " in pdf2zh_path:
+            logger.info(f"使用Python直接执行脚本: {pdf2zh_path}")
+            parts = pdf2zh_path.split()
+            if len(parts) >= 2:  # 例如: "/usr/bin/python3 /path/to/script.py"
+                pdf2zh_cmd = [
+                    parts[0],  # Python解释器
+                    parts[1],  # 脚本路径
+                    pdf_path,  # 文件路径作为位置参数
+                    "--lang-in", source_lang,
+                    "--lang-out", target_lang,
+                    "--service", f"{provider}:{model}" if model else provider,
+                    "--output", result_folder,  # 指定输出目录而不是文件
+                    "--thread", "2",
+                    "--debug"  # 添加调试标志
+                ]
+            else:
+                logger.error(f"无效的Python脚本路径: {pdf2zh_path}")
+                pdf2zh_cmd = []
+        else:
+            pdf2zh_cmd = [
+                pdf2zh_path,
+                pdf_path,  # 文件路径作为位置参数
+                "--lang-in", source_lang,
+                "--lang-out", target_lang,
+                "--service", f"{provider}:{model}" if model else provider,
+                "--output", result_folder,  # 指定输出目录而不是文件
+                "--thread", "2",
+                "--debug"  # 添加调试标志
+            ]
         
-        logger.info(f"执行命令: {' '.join(pdf2zh_cmd)}")
-        logger.info(f"环境变量: DEEPSEEK_API_KEY={os.environ.get('DEEPSEEK_API_KEY', '未设置')[:5] if os.environ.get('DEEPSEEK_API_KEY', '') else '未设置'}..., OPENAI_API_KEY={os.environ.get('OPENAI_API_KEY', '未设置')[:5] if os.environ.get('OPENAI_API_KEY', '') else '未设置'}...")
+        logger.info(f"完整命令行: {' '.join(pdf2zh_cmd)}")
+        logger.info(f"开始执行pdf2zh命令，工作目录: {os.getcwd()}")
+        logger.info(f"结果目录: {result_folder}")
         
         # 执行pdf2zh命令，设置超时
         try:
@@ -187,16 +330,29 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                 env=env,  # 传递当前环境变量，包括API密钥
                 timeout=300  # 设置5分钟超时
             )
+            
+            # 记录命令输出
+            if process.stdout:
+                logger.info(f"命令标准输出:\n{process.stdout}")
+            if process.stderr:
+                if process.returncode != 0:
+                    logger.error(f"命令错误输出:\n{process.stderr}")
+                else:
+                    logger.warning(f"命令警告输出:\n{process.stderr}")
+                    
         except subprocess.TimeoutExpired:
             logger.error("pdf2zh执行超时（5分钟）")
             return None
         except FileNotFoundError as e:
             logger.error(f"翻译过程中发生错误: {str(e)}")
             logger.error(f"无法找到pdf2zh命令。请确保已正确安装pdf2zh工具。")
+            logger.error(f"PATH环境变量: {env.get('PATH', '未设置')}")
             logger.error(f"尝试执行: pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate")
             return None
         except Exception as e:
             logger.error(f"执行pdf2zh命令时发生错误: {str(e)}")
+            import traceback
+            logger.error(f"异常堆栈: {traceback.format_exc()}")
             return None
         
         # 检查返回码
@@ -232,13 +388,29 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
         else:
             # 检查输出目录下是否有生成的PDF
             base_name = os.path.basename(pdf_path).rsplit('.', 1)[0]
+            logger.info(f"结果文件不存在于预期位置，检查其他可能的文件名")
+            logger.info(f"基础文件名: {base_name}")
+            
+            # 列出结果目录中的所有文件
+            try:
+                if os.path.exists(result_folder):
+                    all_files = os.listdir(result_folder)
+                    logger.info(f"结果目录中的所有文件: {all_files}")
+                else:
+                    logger.error(f"结果目录不存在: {result_folder}")
+                    all_files = []
+            except Exception as e:
+                logger.exception(f"列出结果目录文件时出错: {str(e)}")
+                all_files = []
             
             # 首先检查预期的特定格式文件名
             expected_file_path = os.path.join(result_folder, expected_generated_filename)
+            logger.info(f"检查预期的特定格式文件: {expected_file_path}")
             if os.path.exists(expected_file_path):
                 # 找到对应格式的文件，移动到标准位置
+                logger.info(f"找到预期的特定格式文件: {expected_file_path}")
                 shutil.move(expected_file_path, result_path)
-                logger.info(f"找到并移动生成的{format}格式文件: {expected_file_path} -> {result_path}")
+                logger.info(f"已移动到标准位置: {result_path}")
                 return result_path
             
             # 然后检查其他可能的文件名
@@ -250,14 +422,17 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                 f"{base_name}-mono.pdf"
             ]
             
+            logger.info(f"检查其他可能的文件名: {potential_files}")
+            
             # 检查指定的结果目录
             for filename in potential_files:
                 pdf_path = os.path.join(result_folder, filename)
+                logger.info(f"检查可能的文件: {pdf_path}")
                 if os.path.exists(pdf_path):
                     # 找到文件，移动到标准位置
                     if pdf_path != result_path:
+                        logger.info(f"找到文件，移动到标准位置: {pdf_path} -> {result_path}")
                         shutil.move(pdf_path, result_path)
-                        logger.info(f"找到并移动生成的文件: {pdf_path} -> {result_path}")
                     else:
                         logger.info(f"找到生成的文件: {pdf_path}")
                     
@@ -281,12 +456,20 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                     return result_path
             
             # 然后检查当前工作目录
+            logger.info(f"检查当前工作目录: {os.getcwd()}")
+            try:
+                curr_dir_files = os.listdir(os.getcwd())
+                logger.info(f"当前工作目录中的文件: {curr_dir_files}")
+            except Exception as e:
+                logger.exception(f"列出当前工作目录文件时出错: {str(e)}")
+            
             for filename in potential_files:
                 curr_dir_path = os.path.join(os.getcwd(), filename)
+                logger.info(f"检查当前工作目录中的文件: {curr_dir_path}")
                 if os.path.exists(curr_dir_path):
                     # 移动文件到结果目录
+                    logger.info(f"在当前目录找到生成的文件，移动到结果目录: {curr_dir_path} -> {result_path}")
                     shutil.move(curr_dir_path, result_path)
-                    logger.info(f"在当前目录找到并移动生成的文件: {curr_dir_path} -> {result_path}")
                     
                     # 后处理：去除斜杠标记
                     if post_process and format == 'mono':
@@ -307,9 +490,50 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                     
                     return result_path
             
+            # 检查其他可能位置
+            logger.warning("在常规位置未找到生成的文件，检查父目录和pdf2zh可能生成的其他位置")
+            try:
+                parent_dir = os.path.dirname(result_folder)
+                if os.path.exists(parent_dir):
+                    parent_files = os.listdir(parent_dir)
+                    logger.info(f"父目录中的文件: {parent_files}")
+                    # 查找任何以base_name开头并以.pdf结尾的文件
+                    for filename in parent_files:
+                        if filename.startswith(base_name) and filename.endswith(".pdf") and "translated" in filename:
+                            parent_pdf_path = os.path.join(parent_dir, filename)
+                            logger.info(f"在父目录找到可能的翻译文件: {parent_pdf_path}")
+                            shutil.copy2(parent_pdf_path, result_path)
+                            logger.info(f"已复制到结果路径: {result_path}")
+                            return result_path
+            except Exception as e:
+                logger.exception(f"检查父目录时出错: {str(e)}")
+            
+            # 全面搜索整个项目目录
+            try:
+                project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                logger.info(f"在项目根目录搜索翻译后的PDF: {project_root}")
+                for root, dirs, files in os.walk(project_root):
+                    for filename in files:
+                        if filename.startswith(base_name) and filename.endswith(".pdf") and ("translated" in filename or "-dual" in filename or "-mono" in filename):
+                            found_path = os.path.join(root, filename)
+                            logger.info(f"在项目目录找到可能的翻译文件: {found_path}")
+                            
+                            # 如果文件是新创建的（1小时内），很可能是我们要找的
+                            file_created_time = os.path.getctime(found_path)
+                            if time.time() - file_created_time < 3600:  # 1小时 = 3600秒
+                                logger.info(f"文件创建于 {time.ctime(file_created_time)}，复制到结果路径")
+                                shutil.copy2(found_path, result_path)
+                                logger.info(f"已复制到结果路径: {result_path}")
+                                return result_path
+            except Exception as e:
+                logger.exception(f"全面搜索项目目录时出错: {str(e)}")
+            
             logger.error(f"pdf2zh成功执行，但结果文件不存在: {result_path}")
-            logger.error(f"已检查输出目录: {result_folder}")
-            logger.error(f"已检查当前目录: {os.getcwd()}")
+            logger.error(f"已检查以下路径:")
+            logger.error(f"1. 预期的结果路径: {result_path}")
+            logger.error(f"2. 预期的特定格式文件: {expected_file_path}")
+            logger.error(f"3. 结果目录中其他可能的文件名: {[os.path.join(result_folder, f) for f in potential_files]}")
+            logger.error(f"4. 当前工作目录: {[os.path.join(os.getcwd(), f) for f in potential_files]}")
             return None
             
     except Exception as e:
@@ -413,13 +637,64 @@ def main():
                 
                 return jsonify({"error": "不支持的文件类型"}), 400
             
+            @app.route('/api/translate_document', methods=['POST'])
+            def api_translate_document():
+                logger.info("接收到/api/translate_document请求")
+                
+                # 记录请求内容
+                try:
+                    if request.is_json:
+                        req_data = request.get_json()
+                        logger.info(f"请求JSON数据: {json.dumps(req_data, ensure_ascii=False)}")
+                    elif request.form:
+                        logger.info(f"请求表单数据: {dict(request.form)}")
+                    elif request.data:
+                        logger.info(f"请求原始数据: {request.data.decode('utf-8', errors='replace')[:1000]}")
+                    else:
+                        logger.warning("未发现请求数据")
+                        
+                    # 记录请求头信息
+                    headers = dict(request.headers)
+                    logger.info(f"请求头信息: {json.dumps(headers, ensure_ascii=False)}")
+                except Exception as e:
+                    logger.exception(f"记录请求数据时出错: {str(e)}")
+                
+                # 调用原有处理函数
+                return api_translate()
+            
             @app.route('/api/translate', methods=['POST'])
             def api_translate():
-                data = request.json
-                if not data:
-                    return jsonify({"error": "无效的请求数据"}), 400
+                logger.info("接收到/api/translate请求")
+                
+                # 记录原始请求内容
+                try:
+                    if request.is_json:
+                        req_data = request.get_json() 
+                        logger.info(f"请求JSON数据: {json.dumps(req_data, ensure_ascii=False)}")
+                    elif request.form:
+                        logger.info(f"请求表单数据: {dict(request.form)}")
+                    elif request.data:
+                        logger.info(f"请求原始数据: {request.data.decode('utf-8', errors='replace')[:1000]}")
+                    else:
+                        logger.warning("未发现请求数据")
+                except Exception as e:
+                    logger.exception(f"记录请求数据时出错: {str(e)}")
+                
+                try:
+                    # 尝试解析JSON数据
+                    data = request.get_json()
+                    if not data:
+                        logger.error("请求中没有JSON数据")
+                        return jsonify({"error": "无效的请求数据，未提供JSON"}), 400
+                except Exception as e:
+                    logger.exception(f"解析JSON数据失败: {str(e)}")
+                    return jsonify({"error": f"解析请求数据失败: {str(e)}"}), 400
                 
                 task_id = data.get('task_id')
+                if not task_id:
+                    logger.error("请求中缺少task_id字段")
+                    return jsonify({"error": "无效的请求数据，缺少task_id"}), 400
+                
                 source_lang = data.get('source_lang', 'en')
                 target_lang = data.get('target_lang', 'zh')
                 provider = data.get('provider', 'deepseek')
@@ -428,23 +703,35 @@ def main():
                 post_process = data.get('post_process', True)  # 新增后处理参数
                 force = data.get('force', False)  # 新增强制重新翻译参数
                 
+                logger.info(f"翻译参数 - task_id: {task_id}, 源语言: {source_lang}, 目标语言: {target_lang}, "
+                           f"提供商: {provider}, 模型: {model}, 格式: {output_format}, "
+                           f"后处理: {post_process}, 强制重新翻译: {force}")
+                
                 if output_format not in ['mono', 'dual']:
+                    logger.warning(f"不支持的输出格式: {output_format}，使用默认格式: dual")
                     output_format = 'dual'  # 默认使用中英对照格式
                 
-                if not task_id or task_id not in tasks:
+                if task_id not in tasks:
+                    logger.error(f"无效的任务ID: {task_id}")
+                    # 列出现有任务ID以便调试
+                    available_tasks = list(tasks.keys())
+                    logger.info(f"可用的任务ID: {available_tasks}")
                     return jsonify({"error": "无效的任务ID"}), 400
                 
                 task = tasks[task_id]
+                logger.info(f"找到任务: {task}")
                 
                 if task['status'] not in ['pending', 'failed'] and not force:
                     # 如果任务已经完成，并且不是强制重新翻译，则直接返回现有结果
                     if task['status'] == 'completed':
+                        logger.info(f"任务已完成，直接返回结果: {task_id}")
                         return jsonify({
                             "task_id": task_id,
                             "status": task['status'],
                             "message": "翻译已完成",
                             "reused": True
                         })
+                    logger.warning(f"任务状态为 {task['status']}，无法开始翻译")
                     return jsonify({"error": f"任务状态为 {task['status']}，无法开始翻译"}), 400
                 
                 # 更新任务状态
@@ -452,8 +739,16 @@ def main():
                 task['message'] = "翻译处理中..."
                 
                 logger.info(f"开始翻译任务 {task_id}, 源语言: {source_lang}, 目标语言: {target_lang}, 提供商: {provider}, 格式: {output_format}, 后处理: {post_process}, 强制重新翻译: {force}")
+                logger.info(f"原始文件路径: {task['original_path']}")
                 
                 try:
+                    # 确认原始文件存在
+                    if not os.path.exists(task['original_path']):
+                        logger.error(f"原始文件不存在: {task['original_path']}")
+                        task['status'] = 'failed'
+                        task['message'] = f"原始文件不存在: {os.path.basename(task['original_path'])}"
+                        return jsonify({"error": "原始文件不存在"}), 404
+                    
                     # 调用翻译函数
                     result_path = translate_document(
                         task['original_path'],
@@ -475,7 +770,7 @@ def main():
                     else:
                         task['status'] = 'failed'
                         task['message'] = "翻译失败"
-                        logger.error(f"任务 {task_id} 翻译失败")
+                        logger.error(f"任务 {task_id} 翻译失败，result_path为空")
                     
                     return jsonify({
                         "task_id": task_id,
@@ -487,11 +782,6 @@ def main():
                     task['status'] = 'failed'
                     task['message'] = f"启动翻译失败: {str(e)}"
                     return jsonify({"error": str(e)}), 500
-            
-            # 添加/api/translate_document路径（与/api/translate功能相同，用于兼容）
-            @app.route('/api/translate_document', methods=['POST'])
-            def api_translate_document():
-                return api_translate()
             
             @app.route('/api/files/<task_id>', methods=['GET'])
             def get_original_file(task_id):
