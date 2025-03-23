@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用指南 | PaperTrans</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .guide-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .guide-header {
+            margin-bottom: 30px;
+            text-align: center;
+            padding: 30px 0;
+            background-color: #f7f9fc;
+            border-radius: 8px;
+        }
+        
+        .guide-title {
+            font-size: 28px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        .guide-subtitle {
+            font-size: 16px;
+            color: var(--text-light);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .guide-content {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .guide-section {
+            margin-bottom: 40px;
+        }
+        
+        .guide-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .guide-section-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            color: var(--primary-color);
+            position: relative;
+        }
+        
+        .guide-section-title::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -1px;
+            width: 50px;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+        
+        .guide-section-content {
+            color: var(--text-dark);
+            line-height: 1.8;
+        }
+        
+        .guide-steps {
+            counter-reset: step-counter;
+            margin: 20px 0;
+            padding: 0;
+        }
+        
+        .guide-step {
+            position: relative;
+            margin-bottom: 25px;
+            padding-left: 40px;
+            list-style-type: none;
+        }
+        
+        .guide-step::before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .guide-step-title {
+            font-weight: 600;
+            font-size: 17px;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+        
+        .guide-step-description {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+        
+        .guide-tips {
+            background-color: #f0f7ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .guide-tips h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        .guide-image {
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 100%;
+            display: block;
+        }
+        
+        .guide-image-caption {
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+        
+        .table-of-contents {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .table-of-contents-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: var(--text-dark);
+        }
+        
+        .table-of-contents-list {
+            padding-left: 20px;
+        }
+        
+        .table-of-contents-list li {
+            margin-bottom: 10px;
+        }
+        
+        .table-of-contents-list a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .table-of-contents-list a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .guide-container {
+                padding: 15px;
+            }
+            
+            .guide-content {
+                padding: 20px;
+            }
+            
+            .guide-header {
+                padding: 20px 0;
+            }
+            
+            .guide-title {
+                font-size: 22px;
+            }
+            
+            .guide-section-title {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-book-open"></i>
+                <span>PaperTrans</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="history.html">历史记录</a></li>
+                    <li><a href="guide.html" class="active">使用指南</a></li>
+                    <li><a href="about.html">关于我们</a></li>
+                </ul>
+            </nav>
+            <div class="user-actions">
+                <div class="search-bar">
+                    <input type="text" placeholder="搜索论文...">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <button class="btn btn-primary"><i class="fas fa-plus"></i> 发布文章</button>
+                <div class="notification">
+                    <i class="far fa-bell"></i>
+                </div>
+                <div class="avatar">
+                    <img src="https://via.placeholder.com/40" alt="用户头像">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="guide-container">
+        <div class="guide-header">
+            <h1 class="guide-title">PaperTrans 使用指南</h1>
+            <p class="guide-subtitle">本指南将帮助您快速上手使用 PaperTrans 学术论文翻译工具，实现精准高效的论文翻译</p>
+        </div>
+
+        <div class="guide-content">
+            <div class="table-of-contents">
+                <h2 class="table-of-contents-title">目录</h2>
+                <ul class="table-of-contents-list">
+                    <li><a href="#introduction">1. 简介与概述</a></li>
+                    <li><a href="#get-started">2. 快速开始</a></li>
+                    <li><a href="#upload-paper">3. 上传论文</a></li>
+                    <li><a href="#translation-process">4. 翻译过程</a></li>
+                    <li><a href="#viewing-results">5. 查看翻译结果</a></li>
+                    <li><a href="#advanced-features">6. 高级功能</a></li>
+                    <li><a href="#history-management">7. 历史记录管理</a></li>
+                    <li><a href="#common-issues">8. 常见问题解答</a></li>
+                </ul>
+            </div>
+
+            <section id="introduction" class="guide-section">
+                <h2 class="guide-section-title">1. 简介与概述</h2>
+                <div class="guide-section-content">
+                    <p>PaperTrans 是一款专为科研工作者设计的学术论文翻译工具，基于先进的人工智能翻译技术，可以快速准确地翻译各种学术论文，帮助研究人员克服语言障碍，高效获取国际前沿研究成果。</p>
+                    
+                    <p>主要特点：</p>
+                    <ul>
+                        <li><strong>精准翻译</strong> - 针对学术论文的专业术语和表达方式进行优化</li>
+                        <li><strong>保留格式</strong> - 翻译过程中保持原论文的格式和结构</li>
+                        <li><strong>双语对照</strong> - 支持原文与译文对照显示，便于校对和理解</li>
+                        <li><strong>批量处理</strong> - 支持批量上传和处理多篇论文</li>
+                        <li><strong>历史记录</strong> - 自动保存翻译历史，方便随时查阅</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="get-started" class="guide-section">
+                <h2 class="guide-section-title">2. 快速开始</h2>
+                <div class="guide-section-content">
+                    <p>使用 PaperTrans 只需三个简单步骤：</p>
+                    
+                    <ol class="guide-steps">
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">上传论文</h3>
+                            <p class="guide-step-description">在首页上传您需要翻译的 PDF 文件，或输入论文的URL地址。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">开始翻译</h3>
+                            <p class="guide-step-description">点击"开始翻译"按钮，系统将自动处理您的论文。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">查看结果</h3>
+                            <p class="guide-step-description">翻译完成后，您可以在线查看或下载翻译好的文档。</p>
+                        </li>
+                    </ol>
+                    
+                    <div class="guide-tips">
+                        <h4>小贴士</h4>
+                        <p>首次使用时，建议先上传一篇简短的论文进行测试，以熟悉系统的操作流程。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="upload-paper" class="guide-section">
+                <h2 class="guide-section-title">3. 上传论文</h2>
+                <div class="guide-section-content">
+                    <p>PaperTrans 支持两种上传论文的方式：</p>
+                    
+                    <h3>3.1 上传 PDF 文件</h3>
+                    <ol class="guide-steps">
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">访问首页</h3>
+                            <p class="guide-step-description">打开 PaperTrans 首页，找到上传区域。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">选择文件</h3>
+                            <p class="guide-step-description">点击"选择文件"按钮或将 PDF 文件直接拖拽到上传区域。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">确认上传</h3>
+                            <p class="guide-step-description">选择文件后，点击"上传并处理"按钮开始上传。</p>
+                        </li>
+                    </ol>
+                    
+                    <h3>3.2 通过 URL 上传</h3>
+                    <ol class="guide-steps">
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">选择 URL 选项卡</h3>
+                            <p class="guide-step-description">在上传区域，切换到"输入论文URL"选项卡。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">输入论文URL</h3>
+                            <p class="guide-step-description">在输入框中粘贴论文的URL地址。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">获取论文</h3>
+                            <p class="guide-step-description">点击"获取论文"按钮，系统将自动下载并处理论文。</p>
+                        </li>
+                    </ol>
+                    
+                    <div class="guide-tips">
+                        <h4>支持的文件格式</h4>
+                        <p>目前 PaperTrans 主要支持 PDF 格式的学术论文。请确保您上传的 PDF 文件清晰可读，且文本可选择（非扫描版）以获得最佳翻译效果。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="translation-process" class="guide-section">
+                <h2 class="guide-section-title">4. 翻译过程</h2>
+                <div class="guide-section-content">
+                    <p>上传论文后，系统会自动处理文件并准备翻译。整个翻译过程通常包括以下几个阶段：</p>
+                    
+                    <ol class="guide-steps">
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">文件处理</h3>
+                            <p class="guide-step-description">系统对上传的 PDF 文件进行预处理，提取文本内容并分析论文结构。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">开始翻译</h3>
+                            <p class="guide-step-description">在文件处理完成后，点击"开始翻译"按钮启动翻译过程。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">翻译中</h3>
+                            <p class="guide-step-description">系统会显示翻译进度，您可以看到实时的翻译状态更新。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">翻译完成</h3>
+                            <p class="guide-step-description">翻译完成后，系统会自动显示翻译结果，并提供查看和下载选项。</p>
+                        </li>
+                    </ol>
+                    
+                    <div class="guide-tips">
+                        <h4>翻译时间</h4>
+                        <p>翻译时间取决于论文的长度和复杂程度。一般来说，5-10页的论文翻译大约需要1-3分钟。较长或格式复杂的论文可能需要更长时间。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="viewing-results" class="guide-section">
+                <h2 class="guide-section-title">5. 查看翻译结果</h2>
+                <div class="guide-section-content">
+                    <p>翻译完成后，您可以通过多种方式查看和使用翻译结果：</p>
+                    
+                    <h3>5.1 在线查看</h3>
+                    <ol class="guide-steps">
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">双栏视图</h3>
+                            <p class="guide-step-description">默认情况下，系统会以双栏视图显示原文和译文，方便对照阅读。您可以同步滚动两个窗口，便于比较原文与译文。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">单栏视图</h3>
+                            <p class="guide-step-description">如果您希望只关注译文，可以切换到单栏视图模式，获得更大的阅读空间。</p>
+                        </li>
+                    </ol>
+                    
+                    <h3>5.2 格式选项</h3>
+                    <ul>
+                        <li><strong>仅中文版</strong> - 只显示翻译后的中文内容</li>
+                        <li><strong>中英对照版</strong> - 以段落为单位，同时显示英文原文和中文译文</li>
+                    </ul>
+                    
+                    <h3>5.3 下载翻译结果</h3>
+                    <p>您可以通过点击界面上的"下载PDF"按钮，将翻译结果保存为 PDF 文件，方便离线阅读或分享。</p>
+                    
+                    <div class="guide-tips">
+                        <h4>导航技巧</h4>
+                        <p>在查看长篇论文时，可以使用页面底部的页码导航控制器快速跳转到指定页面。同时，键盘的左右箭头键也可以用于前后翻页。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="advanced-features" class="guide-section">
+                <h2 class="guide-section-title">6. 高级功能</h2>
+                <div class="guide-section-content">
+                    <h3>6.1 术语优化</h3>
+                    <p>PaperTrans 针对学术论文中的专业术语进行了优化处理，确保翻译的准确性和专业性。系统内置了大量学科专业词汇库，能够准确识别和翻译各领域的专业术语。</p>
+                    
+                    <h3>6.2 格式设置</h3>
+                    <p>您可以通过工具栏上的控制选项调整以下设置：</p>
+                    <ul>
+                        <li><strong>去除斜杠标记</strong> - 移除文本中可能存在的格式标记，使译文更加清晰</li>
+                        <li><strong>字体大小调整</strong> - 调整显示字体大小，提高阅读舒适度</li>
+                    </ul>
+                    
+                    <h3>6.3 批注和笔记</h3>
+                    <p>在阅读译文时，您可以添加个人批注和笔记，这些笔记将与文档一同保存，便于后续查阅和研究。</p>
+                    
+                    <div class="guide-tips">
+                        <h4>专业功能</h4>
+                        <p>如果您是特定领域的研究人员，可以通过"设置"页面自定义专业词汇表，进一步提高特定领域的翻译质量。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="history-management" class="guide-section">
+                <h2 class="guide-section-title">7. 历史记录管理</h2>
+                <div class="guide-section-content">
+                    <p>PaperTrans 会自动保存您的翻译历史记录，方便您随时查阅和管理：</p>
+                    
+                    <h3>7.1 查看历史记录</h3>
+                    <ol class="guide-steps">
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">访问历史记录页面</h3>
+                            <p class="guide-step-description">点击顶部导航栏中的"历史记录"选项，进入历史记录管理页面。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">筛选记录</h3>
+                            <p class="guide-step-description">您可以使用筛选控件查看"全部文件"、"已翻译"或"未翻译"的记录。</p>
+                        </li>
+                        <li class="guide-step">
+                            <h3 class="guide-step-title">打开历史文件</h3>
+                            <p class="guide-step-description">点击文件卡片上的"查看翻译"按钮，直接查看已翻译的文件；或点击"开始翻译"按钮，为未翻译的文件启动翻译。</p>
+                        </li>
+                    </ol>
+                    
+                    <div class="guide-tips">
+                        <h4>数据安全</h4>
+                        <p>所有上传和翻译的文件都存储在安全的服务器上，我们采取严格的数据保护措施确保您的学术资料安全。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="common-issues" class="guide-section">
+                <h2 class="guide-section-title">8. 常见问题解答</h2>
+                <div class="guide-section-content">
+                    <h3>8.1 上传问题</h3>
+                    <p><strong>问题：我无法上传PDF文件，系统提示错误。</strong></p>
+                    <p>解决方案：</p>
+                    <ul>
+                        <li>确认您的PDF文件大小不超过100MB</li>
+                        <li>检查文件是否损坏或加密</li>
+                        <li>尝试使用不同的浏览器</li>
+                        <li>如果问题仍然存在，请尝试将文件转换为新的PDF格式后再上传</li>
+                    </ul>
+                    
+                    <h3>8.2 翻译问题</h3>
+                    <p><strong>问题：翻译结果中有部分专业术语翻译不准确。</strong></p>
+                    <p>解决方案：</p>
+                    <ul>
+                        <li>检查您的学科领域设置是否正确</li>
+                        <li>尝试使用自定义术语表功能添加特定领域的术语</li>
+                        <li>通过反馈按钮向我们报告不准确的翻译，帮助我们改进系统</li>
+                    </ul>
+                    
+                    <h3>8.3 显示问题</h3>
+                    <p><strong>问题：翻译后的PDF无法正确显示或排版混乱。</strong></p>
+                    <p>解决方案：</p>
+                    <ul>
+                        <li>确认原始PDF文本是可选择的（非扫描版）</li>
+                        <li>尝试使用"仅中文版"格式选项</li>
+                        <li>下载PDF后使用专业PDF阅读器打开</li>
+                    </ul>
+                    
+                    <div class="guide-tips">
+                        <h4>技术支持</h4>
+                        <p>如果您遇到本指南未涵盖的问题，请通过首页底部的联系方式与我们的技术支持团队联系。</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2023 PaperTrans. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,32 @@
+2025-03-23 18:24:37,406 - pdf_translator_bridge - INFO - 启动服务于端口 8000
+ * Serving Flask app 'pdf_translator_bridge'
+ * Debug mode: off
+2025-03-23 18:24:37,414 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8000
+ * Running on http://192.168.71.32:8000
+2025-03-23 18:24:37,414 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-03-23 18:24:44,271 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:24:44] "GET /index.html HTTP/1.1" 200 -
+2025-03-23 18:24:44,326 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:24:44] "[36mGET /css/styles.css HTTP/1.1[0m" 304 -
+2025-03-23 18:24:44,331 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:24:44] "[36mGET /js/script.js HTTP/1.1[0m" 304 -
+2025-03-23 18:24:45,935 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:24:45] "GET /about.html HTTP/1.1" 200 -
+2025-03-23 18:24:45,975 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:24:45] "[36mGET /css/styles.css HTTP/1.1[0m" 304 -
+2025-03-23 18:25:46,882 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:46] "GET /guide.html HTTP/1.1" 200 -
+2025-03-23 18:25:46,930 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:46] "[36mGET /css/styles.css HTTP/1.1[0m" 304 -
+2025-03-23 18:25:48,635 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:48] "GET /history.html HTTP/1.1" 200 -
+2025-03-23 18:25:48,672 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:48] "[36mGET /css/styles.css HTTP/1.1[0m" 304 -
+2025-03-23 18:25:49,737 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:49] "[36mGET /index.html HTTP/1.1[0m" 304 -
+2025-03-23 18:25:49,765 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:49] "[36mGET /css/styles.css HTTP/1.1[0m" 304 -
+2025-03-23 18:25:49,774 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:49] "[36mGET /js/script.js HTTP/1.1[0m" 304 -
+2025-03-23 18:25:52,325 - pdf_translator_bridge - INFO - 从结果目录恢复了最新任务 96472ff2-0938-436b-9779-9275415365eb
+2025-03-23 18:25:52,326 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:52] "GET /api/latest_file HTTP/1.1" 200 -
+2025-03-23 18:25:52,339 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:52] "GET /translate.html?task_id=96472ff2-0938-436b-9779-9275415365eb HTTP/1.1" 200 -
+2025-03-23 18:25:52,373 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:52] "[36mGET /css/styles.css HTTP/1.1[0m" 304 -
+2025-03-23 18:25:52,382 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:52] "[36mGET /css/translate.css HTTP/1.1[0m" 304 -
+2025-03-23 18:25:52,741 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:52] "GET /api/tasks/96472ff2-0938-436b-9779-9275415365eb HTTP/1.1" 200 -
+2025-03-23 18:25:52,898 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:52] "GET /api/check_translation/96472ff2-0938-436b-9779-9275415365eb HTTP/1.1" 200 -
+2025-03-23 18:25:52,899 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:52] "[36mGET /api/files/96472ff2-0938-436b-9779-9275415365eb HTTP/1.1[0m" 304 -
+2025-03-23 18:25:52,912 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:25:52] "[36mGET /api/translated_files/96472ff2-0938-436b-9779-9275415365eb/mono.pdf HTTP/1.1[0m" 304 -
+2025-03-23 18:26:07,079 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:26:07] "[36mGET /index.html HTTP/1.1[0m" 304 -
+2025-03-23 18:26:07,124 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:26:07] "[36mGET /css/styles.css HTTP/1.1[0m" 304 -
+2025-03-23 18:26:07,132 - werkzeug - INFO - 127.0.0.1 - - [23/Mar/2025 18:26:07] "[36mGET /js/script.js HTTP/1.1[0m" 304 -
