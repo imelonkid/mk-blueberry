@@ -66,27 +66,69 @@ if [ ! -z "$PORT_PID" ]; then
     fi
 fi
 
-# 激活Python 3.10环境
-export PATH="/Users/melonkid/opt/anaconda3/bin:$PATH"
+# Python环境激活
+echo -e "${BLUE}准备Python环境...${NC}"
 
-# 检查conda.sh文件是否存在，使用更安全的方式激活conda环境
-CONDA_SH="/Users/melonkid/opt/anaconda3/etc/profile.d/conda.sh"
-if [ -f "$CONDA_SH" ]; then
-    source "$CONDA_SH"
-    conda activate py310
-else
-    echo -e "${YELLOW}警告: 未找到conda.sh文件，尝试直接激活环境...${NC}"
-    # 尝试直接使用conda命令
-    if command -v conda >/dev/null 2>&1; then
-        conda activate py310 || true
+# 首先尝试检查虚拟环境
+if [ -d "$SCRIPT_DIR/venv" ]; then
+    echo -e "${GREEN}发现虚拟环境，尝试激活...${NC}"
+    if [ -f "$SCRIPT_DIR/venv/bin/activate" ]; then
+        source "$SCRIPT_DIR/venv/bin/activate"
+        echo -e "${GREEN}虚拟环境激活成功${NC}"
     else
-        echo -e "${YELLOW}警告: 未找到conda命令，使用系统Python继续...${NC}"
+        echo -e "${YELLOW}警告: 虚拟环境目录存在，但无法找到激活脚本${NC}"
     fi
+fi
+
+# 然后尝试conda环境（作为备选）
+if ! command -v python3 >/dev/null 2>&1; then
+    echo -e "${YELLOW}未找到python3命令，尝试激活conda环境...${NC}"
     
-    # 确保我们有Python可用
-    if ! command -v python >/dev/null 2>&1; then
-        echo -e "${RED}错误: 无法找到Python命令，请确保Python已安装${NC}"
-        exit 1
+    # 优先使用本地安装的conda
+    CONDA_PATHS=(
+        "/Users/melonkid/opt/anaconda3/etc/profile.d/conda.sh"
+        "$HOME/anaconda3/etc/profile.d/conda.sh"
+        "$HOME/miniconda3/etc/profile.d/conda.sh"
+        "/opt/anaconda3/etc/profile.d/conda.sh"
+        "/usr/local/anaconda3/etc/profile.d/conda.sh"
+        "/usr/local/opt/conda/etc/profile.d/conda.sh"
+    )
+    
+    for CONDA_SH in "${CONDA_PATHS[@]}"; do
+        if [ -f "$CONDA_SH" ]; then
+            echo -e "${GREEN}找到conda: $CONDA_SH${NC}"
+            source "$CONDA_SH"
+            # 尝试激活环境
+            if conda info --envs | grep -q "py310"; then
+                conda activate py310
+                echo -e "${GREEN}已激活conda环境: py310${NC}"
+            elif conda info --envs | grep -q "base"; then
+                conda activate base
+                echo -e "${GREEN}已激活conda基础环境${NC}"
+            else
+                echo -e "${YELLOW}未找到匹配的conda环境，使用系统Python${NC}"
+            fi
+            break
+        fi
+    done
+fi
+
+# 检查pdf2zh命令是否可用
+echo -e "${BLUE}检查pdf2zh命令是否可用...${NC}"
+if command -v pdf2zh >/dev/null 2>&1; then
+    echo -e "${GREEN}pdf2zh命令可用: $(which pdf2zh)${NC}"
+else
+    echo -e "${YELLOW}警告: pdf2zh命令不可用，尝试安装...${NC}"
+    pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate || {
+        echo -e "${RED}安装pdf2zh失败。服务可能无法正常工作。${NC}"
+        echo -e "${YELLOW}请手动执行: pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate${NC}"
+    }
+    
+    # 再次检查
+    if command -v pdf2zh >/dev/null 2>&1; then
+        echo -e "${GREEN}pdf2zh命令安装成功: $(which pdf2zh)${NC}"
+    else
+        echo -e "${YELLOW}pdf2zh命令仍不可用，但将继续启动服务${NC}"
     fi
 fi
 
@@ -138,6 +180,12 @@ echo -e "${BLUE}启动PDF翻译后端服务...${NC}"
 
 # 清除日志文件
 > "$LOG_FILE"
+
+# 显示当前环境信息
+echo -e "${BLUE}当前Python环境:${NC} $(which python)"
+echo -e "${BLUE}Python版本:${NC} $(python --version 2>&1)"
+echo -e "${BLUE}PATH环境变量:${NC} $PATH"
+echo -e "${BLUE}当前工作目录:${NC} $(pwd)"
 
 # 启动后端服务 - 直接调用pdf_translator_bridge.py
 cd "$BACKEND_DIR"

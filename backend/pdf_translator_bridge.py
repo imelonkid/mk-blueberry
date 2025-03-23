@@ -79,8 +79,91 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
     
     try:
         # 构建pdf2zh命令 - 根据pdf2zh的帮助信息调整参数格式
+        # 尝试多种方式找到pdf2zh命令
+        pdf2zh_cmd_paths = [
+            "pdf2zh",  # 系统路径
+            os.path.expanduser("~/.local/bin/pdf2zh"),  # 用户安装路径
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "venv/bin/pdf2zh"),  # 虚拟环境路径
+            "/usr/local/bin/pdf2zh"  # 全局安装路径
+        ]
+        
+        # 检查哪个pdf2zh路径存在并可执行
+        pdf2zh_path = None
+        for cmd_path in pdf2zh_cmd_paths:
+            if os.path.exists(cmd_path) and os.access(cmd_path, os.X_OK):
+                pdf2zh_path = cmd_path
+                logger.info(f"找到pdf2zh命令: {pdf2zh_path}")
+                break
+            elif " " not in cmd_path and shutil.which(cmd_path):  # 检查系统路径中的命令
+                pdf2zh_path = shutil.which(cmd_path)
+                logger.info(f"从系统路径找到pdf2zh命令: {pdf2zh_path}")
+                break
+        
+        # 如果没有找到pdf2zh，尝试安装
+        if not pdf2zh_path:
+            logger.warning("未找到pdf2zh命令，尝试检查Python环境...")
+            try:
+                # 检查当前Python路径
+                python_path = sys.executable
+                logger.info(f"当前Python路径: {python_path}")
+                
+                # 检查pip是否可用
+                pip_check = subprocess.run(
+                    [python_path, "-m", "pip", "--version"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                if pip_check.returncode == 0:
+                    logger.info(f"pip可用: {pip_check.stdout.strip()}")
+                    
+                    # 检查pdf2zh包是否已安装
+                    pip_list = subprocess.run(
+                        [python_path, "-m", "pip", "list"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    if "paper2translate" in pip_list.stdout or "pdf2zh" in pip_list.stdout:
+                        logger.info("pdf2zh包已安装，但命令不可用，可能是PATH问题")
+                    else:
+                        logger.warning("pdf2zh包未安装，尝试安装...")
+                        # 尝试安装pdf2zh
+                        install_result = subprocess.run(
+                            [python_path, "-m", "pip", "install", "-e", "git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate"],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True
+                        )
+                        if install_result.returncode == 0:
+                            logger.info("pdf2zh安装成功")
+                            # 重新检查命令
+                            pdf2zh_path = shutil.which("pdf2zh")
+                        else:
+                            logger.error(f"pdf2zh安装失败: {install_result.stderr}")
+            except Exception as e:
+                logger.exception(f"检查和安装pdf2zh时出错: {str(e)}")
+            
+            # 如果仍然找不到，使用默认命令并记录警告
+            if not pdf2zh_path:
+                logger.warning("无法找到或安装pdf2zh命令，将使用默认'pdf2zh'命令，可能会失败")
+                pdf2zh_path = "pdf2zh"
+        
+        # 设置环境变量
+        env = os.environ.copy()
+        # 检查关键环境变量
+        if 'PYTHONPATH' not in env:
+            logger.warning("PYTHONPATH环境变量未设置")
+        if 'PATH' in env:
+            logger.info(f"PATH环境变量: {env['PATH']}")
+        else:
+            logger.warning("PATH环境变量未设置")
+        if 'OPENAI_API_KEY' not in env and 'DEEPSEEK_API_KEY' not in env:
+            logger.warning("未找到OPENAI_API_KEY或DEEPSEEK_API_KEY环境变量")
+        
+        # 构建命令
         pdf2zh_cmd = [
-            "pdf2zh",
+            pdf2zh_path,
             pdf_path,  # 文件路径作为位置参数
             "--lang-in", source_lang,
             "--lang-out", target_lang,
@@ -91,7 +174,7 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
         ]
         
         logger.info(f"执行命令: {' '.join(pdf2zh_cmd)}")
-        logger.info(f"环境变量: DEEPSEEK_API_KEY={os.environ.get('DEEPSEEK_API_KEY', '未设置')[:5]}..., OPENAI_API_KEY={os.environ.get('OPENAI_API_KEY', '未设置')[:5]}...")
+        logger.info(f"环境变量: DEEPSEEK_API_KEY={os.environ.get('DEEPSEEK_API_KEY', '未设置')[:5] if os.environ.get('DEEPSEEK_API_KEY', '') else '未设置'}..., OPENAI_API_KEY={os.environ.get('OPENAI_API_KEY', '未设置')[:5] if os.environ.get('OPENAI_API_KEY', '') else '未设置'}...")
         
         # 执行pdf2zh命令，设置超时
         try:
@@ -101,11 +184,19 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                 stderr=subprocess.PIPE,
                 text=True,
                 check=False,  # 设为False，我们自己处理错误
-                env=os.environ.copy(),  # 传递当前环境变量，包括API密钥
+                env=env,  # 传递当前环境变量，包括API密钥
                 timeout=300  # 设置5分钟超时
             )
         except subprocess.TimeoutExpired:
             logger.error("pdf2zh执行超时（5分钟）")
+            return None
+        except FileNotFoundError as e:
+            logger.error(f"翻译过程中发生错误: {str(e)}")
+            logger.error(f"无法找到pdf2zh命令。请确保已正确安装pdf2zh工具。")
+            logger.error(f"尝试执行: pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate")
+            return None
+        except Exception as e:
+            logger.error(f"执行pdf2zh命令时发生错误: {str(e)}")
             return None
         
         # 检查返回码
