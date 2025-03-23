@@ -172,4 +172,5 @@ cython_debug/
 uv.lock
 *.pdf
 *.log
+*.pid
 *.docx
