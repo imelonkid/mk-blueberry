@@ -120,20 +120,41 @@ echo -e "${BLUE}检查pdf2zh命令是否可用...${NC}"
 echo -e "${BLUE}系统信息:${NC}"
 uname -a
 cat /etc/os-release 2>/dev/null || echo "无法获取OS发行版信息"
+if [ -f /etc/centos-release ]; then
+    echo -e "${YELLOW}检测到CentOS系统:${NC}"
+    cat /etc/centos-release
+fi
 
 # 检查多个可能的pdf2zh路径
 PDF2ZH_PATHS=(
     "pdf2zh"
     "$HOME/.local/bin/pdf2zh"
+    "$HOME/.pyenv/shims/pdf2zh"
+    "$HOME/.pyenv/versions/*/bin/pdf2zh"
     "$SCRIPT_DIR/venv/bin/pdf2zh"
     "/usr/local/bin/pdf2zh"
+    "/usr/bin/pdf2zh"
+    "/opt/python*/bin/pdf2zh"
     "/root/.local/bin/pdf2zh"
     "$SCRIPT_DIR/bin/pdf2zh"
+    "$(dirname $SCRIPT_DIR)/bin/pdf2zh"
 )
 
 PDF2ZH_FOUND=false
 for path in "${PDF2ZH_PATHS[@]}"; do
-    if command -v "$path" >/dev/null 2>&1 || [ -x "$path" ]; then
+    # 处理通配符路径
+    if [[ $path == *"*"* ]]; then
+        echo -e "${YELLOW}检查通配符路径: $path${NC}"
+        # 使用find命令查找匹配的文件
+        for found_path in $(find ${path//\*/\*} -type f -name "pdf2zh" 2>/dev/null); do
+            if [ -x "$found_path" ]; then
+                echo -e "${GREEN}pdf2zh命令可用: $found_path${NC}"
+                PDF2ZH_FOUND=true
+                export PDF2ZH_PATH="$found_path"
+                break 2
+            fi
+        done
+    elif command -v "$path" >/dev/null 2>&1 || [ -x "$path" ]; then
         echo -e "${GREEN}pdf2zh命令可用: $path${NC}"
         PDF2ZH_FOUND=true
         # 将此路径设置为环境变量，供后端使用
@@ -154,6 +175,16 @@ if [ "$PDF2ZH_FOUND" = false ]; then
             echo -e "${YELLOW}未找到python3命令，使用python命令${NC}"
         else
             echo -e "${RED}错误: 未找到python或python3命令，无法继续${NC}"
+            
+            # 针对CentOS系统提供安装指南
+            if [ -f /etc/centos-release ] || grep -q "CentOS" /etc/os-release 2>/dev/null; then
+                echo -e "${YELLOW}检测到CentOS系统，尝试安装Python...${NC}"
+                echo -e "${YELLOW}您可能需要执行以下命令:${NC}"
+                echo -e "  sudo yum install -y python3  # 安装Python 3"
+                echo -e "或"
+                echo -e "  sudo yum install -y python   # 安装Python 2"
+            fi
+            
             exit 1
         fi
     else
@@ -174,9 +205,32 @@ if [ "$PDF2ZH_FOUND" = false ]; then
             echo -e "  sudo yum install -y python3-pip  # 对于Python 3"
             echo -e "或"
             echo -e "  sudo yum install -y python-pip   # 对于Python 2"
+            echo -e "或使用以下方法安装pip:"
+            echo -e "  curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py"
+            echo -e "  sudo $PY_CMD get-pip.py"
         fi
         
         exit 1
+    fi
+    
+    # 在CentOS上可能需要额外的开发包
+    if [ -f /etc/centos-release ] || grep -q "CentOS" /etc/os-release 2>/dev/null; then
+        echo -e "${YELLOW}检测到CentOS系统，检查开发包...${NC}"
+        # 检查是否安装了gcc和python开发包
+        if ! command -v gcc >/dev/null 2>&1; then
+            echo -e "${YELLOW}警告: gcc未安装，可能会影响pdf2zh的安装${NC}"
+            echo -e "${YELLOW}建议执行: sudo yum install -y gcc${NC}"
+        fi
+        
+        # 检查python-devel包
+        if ! $PY_CMD -c "import distutils.core" >/dev/null 2>&1; then
+            echo -e "${YELLOW}警告: Python开发包可能未安装，建议执行:${NC}"
+            if [[ "$PY_CMD" == "python3" ]]; then
+                echo -e "${YELLOW}sudo yum install -y python3-devel${NC}"
+            else
+                echo -e "${YELLOW}sudo yum install -y python-devel${NC}"
+            fi
+        fi
     fi
     
     # 尝试安装pdf2zh - 先使用--user方式安装
@@ -186,6 +240,11 @@ if [ "$PDF2ZH_FOUND" = false ]; then
         $PY_CMD -m pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate || {
             echo -e "${RED}安装pdf2zh失败。服务可能无法正常工作。${NC}"
             echo -e "${YELLOW}请手动执行: pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate${NC}"
+            echo -e "${YELLOW}如果安装失败，可能需要安装开发工具:${NC}"
+            if [ -f /etc/centos-release ] || grep -q "CentOS" /etc/os-release 2>/dev/null; then
+                echo -e "${YELLOW}sudo yum groupinstall -y 'Development Tools'${NC}"
+                echo -e "${YELLOW}sudo yum install -y python3-devel${NC}"
+            fi
         }
     }
     
@@ -201,6 +260,21 @@ if [ "$PDF2ZH_FOUND" = false ]; then
             export PATH="$USER_LOCAL_BIN:$PATH"
             export PDF2ZH_PATH="$USER_LOCAL_BIN/pdf2zh"
             echo -e "${GREEN}已将$USER_LOCAL_BIN添加到PATH${NC}"
+            
+            # 添加到.bashrc或.bash_profile以持久化PATH设置
+            if [ -f "$HOME/.bashrc" ]; then
+                if ! grep -q "export PATH=.*$USER_LOCAL_BIN" "$HOME/.bashrc"; then
+                    echo -e "${YELLOW}添加$USER_LOCAL_BIN到.bashrc...${NC}"
+                    echo "export PATH=\"$USER_LOCAL_BIN:\$PATH\"" >> "$HOME/.bashrc"
+                    echo -e "${GREEN}PATH设置已添加到.bashrc${NC}"
+                fi
+            elif [ -f "$HOME/.bash_profile" ]; then
+                if ! grep -q "export PATH=.*$USER_LOCAL_BIN" "$HOME/.bash_profile"; then
+                    echo -e "${YELLOW}添加$USER_LOCAL_BIN到.bash_profile...${NC}"
+                    echo "export PATH=\"$USER_LOCAL_BIN:\$PATH\"" >> "$HOME/.bash_profile"
+                    echo -e "${GREEN}PATH设置已添加到.bash_profile${NC}"
+                fi
+            fi
         else
             echo -e "${YELLOW}在$USER_LOCAL_BIN中未找到pdf2zh${NC}"
             
@@ -226,9 +300,43 @@ EOL
                     export PDF2ZH_PATH="$WRAPPER_SCRIPT"
                 else
                     echo -e "${YELLOW}未找到paper2translate包${NC}"
+                    
+                    # 检查是否为pip作为模块安装但未创建可执行文件的情况
+                    if $PY_CMD -c "import pkgutil; print(pkgutil.find_loader('paper2translate') is not None)" 2>/dev/null | grep -q "True"; then
+                        echo -e "${YELLOW}paper2translate包已作为模块安装，创建Python模块执行入口...${NC}"
+                        # 创建模块执行脚本
+                        mkdir -p "$SCRIPT_DIR/bin"
+                        MODULE_SCRIPT="$SCRIPT_DIR/bin/pdf2zh"
+                        
+                        cat > "$MODULE_SCRIPT" << EOL
+#!/bin/sh
+$PY_CMD -m paper2translate.cli "\$@"
+EOL
+                        chmod +x "$MODULE_SCRIPT"
+                        echo -e "${GREEN}创建了模块执行脚本: $MODULE_SCRIPT${NC}"
+                        export PDF2ZH_PATH="$MODULE_SCRIPT"
+                    fi
                 fi
             else
                 echo -e "${YELLOW}未找到site-packages目录${NC}"
+                
+                # 尝试通过模块导入路径查找
+                MODULE_PATH=$($PY_CMD -c "import importlib.util, sys; spec = importlib.util.find_spec('paper2translate'); print(spec.origin if spec else 'Not found')" 2>/dev/null)
+                if [ "$MODULE_PATH" != "Not found" ] && [ -n "$MODULE_PATH" ]; then
+                    echo -e "${YELLOW}通过模块导入路径找到paper2translate: $MODULE_PATH${NC}"
+                    
+                    # 创建执行脚本
+                    mkdir -p "$SCRIPT_DIR/bin"
+                    MODULE_EXEC="$SCRIPT_DIR/bin/pdf2zh"
+                    
+                    cat > "$MODULE_EXEC" << EOL
+#!/bin/sh
+$PY_CMD -m paper2translate.cli "\$@"
+EOL
+                    chmod +x "$MODULE_EXEC"
+                    echo -e "${GREEN}创建了模块执行脚本: $MODULE_EXEC${NC}"
+                    export PDF2ZH_PATH="$MODULE_EXEC"
+                fi
             fi
         fi
     else
@@ -249,8 +357,29 @@ if command -v pdf2zh >/dev/null 2>&1 || [ ! -z "$PDF2ZH_PATH" ]; then
         export PDF2ZH_PATH="$PDF2ZH_PATH"
     fi
 else
-    echo -e "${YELLOW}pdf2zh命令仍不可用，服务可能无法正常工作${NC}"
-    echo -e "${YELLOW}将尝试在后端中直接找到或安装pdf2zh${NC}"
+    echo -e "${YELLOW}pdf2zh命令仍不可用，尝试创建Python模块调用脚本...${NC}"
+    
+    # 创建Python模块调用脚本
+    mkdir -p "$SCRIPT_DIR/bin"
+    FALLBACK_SCRIPT="$SCRIPT_DIR/bin/pdf2zh"
+    
+    cat > "$FALLBACK_SCRIPT" << EOL
+#!/bin/sh
+# 在不同路径尝试查找Python
+for py_cmd in python3 python /usr/bin/python3 /usr/bin/python $HOME/.pyenv/shims/python3; do
+    if command -v \$py_cmd >/dev/null 2>&1; then
+        echo "使用Python: \$py_cmd"
+        \$py_cmd -m paper2translate.cli "\$@"
+        exit \$?
+    fi
+done
+echo "未找到可用的Python命令"
+exit 1
+EOL
+    chmod +x "$FALLBACK_SCRIPT"
+    echo -e "${YELLOW}创建了备用脚本: $FALLBACK_SCRIPT${NC}"
+    export PDF2ZH_PATH="$FALLBACK_SCRIPT"
+    echo -e "${YELLOW}将尝试在后端中直接调用Python模块${NC}"
 fi
 
 # 设置API密钥（如果.env中未设置则使用默认值）

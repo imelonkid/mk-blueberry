@@ -84,14 +84,33 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
             os.environ.get('PDF2ZH_PATH', ''),  # 从环境变量获取（由start.sh设置）
             "pdf2zh",  # 系统路径
             os.path.expanduser("~/.local/bin/pdf2zh"),  # 用户安装路径
+            os.path.expanduser("~/.pyenv/shims/pdf2zh"),  # pyenv路径
+            os.path.expanduser("~/.pyenv/versions/*/bin/pdf2zh"),  # pyenv特定版本路径
             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "venv/bin/pdf2zh"),  # 虚拟环境路径
             "/usr/local/bin/pdf2zh",  # 全局安装路径
+            "/usr/bin/pdf2zh",  # 系统路径
+            "/opt/python*/bin/pdf2zh",  # 可能的自定义Python安装
             "/root/.local/bin/pdf2zh",  # root用户安装路径
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "bin/pdf2zh")  # 当前目录bin文件夹
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "bin/pdf2zh"),  # 当前目录bin文件夹
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bin/pdf2zh")  # 上级目录bin文件夹
         ]
         
-        # 过滤掉空路径
-        pdf2zh_cmd_paths = [path for path in pdf2zh_cmd_paths if path]
+        # 过滤掉空路径和处理通配符路径
+        actual_paths = []
+        for path in pdf2zh_cmd_paths:
+            if not path:
+                continue
+            
+            # 处理通配符路径（例如 ~/.pyenv/versions/*/bin/pdf2zh）
+            if '*' in path:
+                import glob
+                matching_paths = glob.glob(path)
+                actual_paths.extend(matching_paths)
+            else:
+                actual_paths.append(path)
+        
+        pdf2zh_cmd_paths = actual_paths
+        logger.info(f"将检查以下pdf2zh路径: {pdf2zh_cmd_paths}")
         
         # 检查是否存在环境变量设置的路径
         if os.environ.get('PDF2ZH_PATH'):
@@ -100,14 +119,47 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
         # 系统信息记录，用于排查不同系统上的问题
         try:
             import platform
+            import subprocess
             system_info = {
                 "系统": platform.system(),
                 "发行版": platform.release(),
                 "版本": platform.version(),
                 "架构": platform.machine(),
-                "Python版本": platform.python_version()
+                "Python版本": platform.python_version(),
+                "执行路径": sys.executable,
+                "工作目录": os.getcwd()
             }
+            
+            # 尝试获取更详细的Linux发行版信息
+            try:
+                if os.path.exists('/etc/os-release'):
+                    with open('/etc/os-release', 'r') as f:
+                        os_info = {}
+                        for line in f:
+                            if '=' in line:
+                                key, value = line.strip().split('=', 1)
+                                os_info[key] = value.strip('"')
+                        if 'NAME' in os_info:
+                            system_info["Linux发行版"] = os_info['NAME']
+                        if 'VERSION_ID' in os_info:
+                            system_info["发行版版本"] = os_info['VERSION_ID']
+                
+                # 检查是否为CentOS
+                if os.path.exists('/etc/centos-release'):
+                    with open('/etc/centos-release', 'r') as f:
+                        system_info["CentOS版本"] = f.read().strip()
+            except Exception as e:
+                logger.warning(f"获取Linux发行版信息时出错: {str(e)}")
+            
+            # 获取环境变量信息
+            system_info["PATH环境变量"] = os.environ.get('PATH', '未设置')
+            system_info["PYTHONPATH环境变量"] = os.environ.get('PYTHONPATH', '未设置')
+            
             logger.info(f"系统信息: {json.dumps(system_info, ensure_ascii=False)}")
+            
+            # 如果是CentOS，提供特别说明
+            if 'CentOS' in json.dumps(system_info):
+                logger.info("检测到CentOS系统，可能需要特殊处理")
         except Exception as e:
             logger.warning(f"获取系统信息时出错: {str(e)}")
         
@@ -122,6 +174,16 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                     break
                 else:
                     logger.warning(f"文件存在但不可执行: {cmd_path}")
+                    try:
+                        # 尝试修复权限
+                        os.chmod(cmd_path, 0o755)
+                        logger.info(f"已尝试修复文件权限: {cmd_path}")
+                        if os.access(cmd_path, os.X_OK):
+                            pdf2zh_path = cmd_path
+                            logger.info(f"权限修复成功，现在可执行: {pdf2zh_path}")
+                            break
+                    except Exception as e:
+                        logger.warning(f"尝试修复文件权限时出错: {str(e)}")
             elif " " not in cmd_path and shutil.which(cmd_path):  # 检查系统路径中的命令
                 pdf2zh_path = shutil.which(cmd_path)
                 logger.info(f"从系统路径找到pdf2zh命令: {pdf2zh_path}")
@@ -283,9 +345,17 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                 logger.info(f"已将Python目录添加到PATH: {env['PATH']}")
                 python_dirs.append(python_dir)
                 
+        # 记录API密钥状态（不记录实际密钥内容）
+        for key in ['OPENAI_API_KEY', 'DEEPSEEK_API_KEY', 'ANTHROPIC_API_KEY']:
+            if key in env:
+                masked_key = env[key][:4] + "..." if len(env[key]) > 4 else "***"
+                logger.info(f"环境变量 {key} 已设置: {masked_key}")
+            else:
+                logger.warning(f"环境变量 {key} 未设置")
+                
         # 构建命令
         # 判断pdf2zh_path是否包含python调用，如果是，则需要特殊处理
-        if pdf2zh_path.startswith(sys.executable) or " " in pdf2zh_path:
+        if pdf2zh_path and (pdf2zh_path.startswith(sys.executable) or " " in pdf2zh_path):
             logger.info(f"使用Python直接执行脚本: {pdf2zh_path}")
             parts = pdf2zh_path.split()
             if len(parts) >= 2:  # 例如: "/usr/bin/python3 /path/to/script.py"
@@ -302,8 +372,20 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                 ]
             else:
                 logger.error(f"无效的Python脚本路径: {pdf2zh_path}")
-                pdf2zh_cmd = []
-        else:
+                logger.info("尝试直接使用Python模块执行")
+                # 尝试使用Python -m方式执行
+                pdf2zh_cmd = [
+                    sys.executable,
+                    "-m", "paper2translate.cli",
+                    pdf_path,
+                    "--lang-in", source_lang,
+                    "--lang-out", target_lang,
+                    "--service", f"{provider}:{model}" if model else provider,
+                    "--output", result_folder,
+                    "--thread", "2",
+                    "--debug"
+                ]
+        elif pdf2zh_path:
             pdf2zh_cmd = [
                 pdf2zh_path,
                 pdf_path,  # 文件路径作为位置参数
@@ -314,10 +396,28 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
                 "--thread", "2",
                 "--debug"  # 添加调试标志
             ]
+        else:
+            # 如果完全找不到pdf2zh命令，尝试直接使用Python模块
+            logger.warning("无法找到pdf2zh命令，尝试直接使用Python模块执行")
+            pdf2zh_cmd = [
+                sys.executable,
+                "-m", "paper2translate.cli",
+                pdf_path,
+                "--lang-in", source_lang,
+                "--lang-out", target_lang,
+                "--service", f"{provider}:{model}" if model else provider,
+                "--output", result_folder,
+                "--thread", "2",
+                "--debug"
+            ]
         
-        logger.info(f"完整命令行: {' '.join(pdf2zh_cmd)}")
+        # 记录命令和环境信息
+        cmd_str = ' '.join(pdf2zh_cmd)
+        logger.info(f"完整命令行: {cmd_str}")
         logger.info(f"开始执行pdf2zh命令，工作目录: {os.getcwd()}")
         logger.info(f"结果目录: {result_folder}")
+        logger.info(f"环境变量: DEEPSEEK_API_KEY={masked_key if 'DEEPSEEK_API_KEY' in env else '未设置'}, "
+                    f"OPENAI_API_KEY={masked_key if 'OPENAI_API_KEY' in env else '未设置'}")
         
         # 执行pdf2zh命令，设置超时
         try:
@@ -345,14 +445,56 @@ def translate_document(pdf_path, task_id=None, source_lang='en', target_lang='zh
             return None
         except FileNotFoundError as e:
             logger.error(f"翻译过程中发生错误: {str(e)}")
-            logger.error(f"无法找到pdf2zh命令。请确保已正确安装pdf2zh工具。")
+            logger.error(f"无法找到pdf2zh命令: {pdf2zh_cmd[0]}")
             logger.error(f"PATH环境变量: {env.get('PATH', '未设置')}")
-            logger.error(f"尝试执行: pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate")
-            return None
-        except Exception as e:
-            logger.error(f"执行pdf2zh命令时发生错误: {str(e)}")
-            import traceback
-            logger.error(f"异常堆栈: {traceback.format_exc()}")
+            logger.error(f"尝试以下解决方案:")
+            logger.error(f"1. 确保已正确安装pdf2zh: pip install -e git+https://github.com/zouweidong91/paper2translate.git#egg=paper2translate")
+            logger.error(f"2. 使用绝对路径执行pdf2zh")
+            logger.error(f"3. 检查文件权限")
+            
+            # 尝试获取python包信息
+            try:
+                pip_list_output = subprocess.run(
+                    [sys.executable, "-m", "pip", "list"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                logger.info(f"已安装的Python包:\n{pip_list_output.stdout}")
+                
+                # 检查是否安装了paper2translate
+                if "paper2translate" in pip_list_output.stdout or "pdf2zh" in pip_list_output.stdout:
+                    logger.info("paper2translate包已安装，但无法执行命令")
+                    
+                    # 尝试获取包的安装位置
+                    pkg_location_output = subprocess.run(
+                        [sys.executable, "-c", "import importlib.util, sys; print(importlib.util.find_spec('paper2translate'))"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    logger.info(f"paper2translate包位置信息:\n{pkg_location_output.stdout}")
+                    
+                    # 尝试直接使用模块
+                    logger.info("尝试直接使用Python模块执行...")
+                    module_cmd = [
+                        sys.executable,
+                        "-m", "paper2translate.cli",
+                        "--help"
+                    ]
+                    
+                    module_check = subprocess.run(
+                        module_cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    logger.info(f"模块执行测试结果:\n{module_check.stdout}")
+                    if module_check.stderr:
+                        logger.warning(f"模块执行警告/错误:\n{module_check.stderr}")
+            except Exception as module_e:
+                logger.exception(f"尝试检查模块时出错: {str(module_e)}")
+                
             return None
         
         # 检查返回码
