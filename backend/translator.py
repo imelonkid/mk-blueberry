@@ -58,16 +58,6 @@ class Translator:
         
         logging.info(f"翻译文本，长度: {len(text)}, 提供商: {self.provider}, 模型: {self.model}")
         
-        # 测试模式 - 如果API密钥是测试值，直接返回模拟翻译
-        if self.api_key == 'sk-test':
-            logging.info("使用测试模式，返回模拟翻译")
-            # 简单模拟翻译
-            if len(text) > 100:
-                return f"[测试模式] 这是原文的模拟翻译结果。原文长度: {len(text)}字符。"
-            else:
-                # 对于短文本，添加一些简单的模拟翻译
-                return f"[测试翻译] {text[:30]}..."
-        
         # 构建翻译提示
         prompt = f"""请将以下文本翻译成{target_language}，保持原始格式和专业术语的准确性：
         
