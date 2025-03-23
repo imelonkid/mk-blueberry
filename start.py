@@ -14,6 +14,7 @@ import subprocess
 import webbrowser
 import platform
 from pathlib import Path
+import argparse
 
 # 设置颜色输出（如果支持）
 try:
@@ -39,6 +40,28 @@ BACKEND_DIR = SCRIPT_DIR / "backend"
 LOG_FILE = SCRIPT_DIR / "papertrans.log"
 PID_FILE = SCRIPT_DIR / ".papertrans.pid"
 PORT = 8000
+
+# 尝试加载.env文件中的配置
+def load_env_file():
+    env_file = SCRIPT_DIR / ".env"
+    if env_file.exists():
+        print_color("从.env文件加载配置...", 'blue')
+        with open(env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ[key.strip()] = value.strip()
+        return True
+    return False
+
+# 解析命令行参数
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="启动PaperTrans PDF翻译服务")
+    parser.add_argument('--port', type=int, help="指定要使用的端口号")
+    return parser.parse_args()
 
 # 打印欢迎信息
 def print_welcome():
@@ -100,6 +123,18 @@ def start_service():
         # 确保目录存在
         (BACKEND_DIR / "uploads").mkdir(exist_ok=True)
         (BACKEND_DIR / "translated").mkdir(exist_ok=True)
+        
+        # 设置API密钥（如果.env中未设置则提示配置）
+        if "DEEPSEEK_API_KEY" not in os.environ:
+            print_color("未在.env中找到DEEPSEEK_API_KEY，请在.env文件中配置", 'yellow')
+            
+        if "OPENAI_API_KEY" not in os.environ:
+            # 如果设置了DEEPSEEK_API_KEY，同时将其用于OPENAI_API_KEY
+            if "DEEPSEEK_API_KEY" in os.environ:
+                print_color("未设置OPENAI_API_KEY，使用DEEPSEEK_API_KEY作为替代", 'yellow')
+                os.environ["OPENAI_API_KEY"] = os.environ["DEEPSEEK_API_KEY"]
+            else:
+                print_color("未在.env中找到OPENAI_API_KEY，请在.env文件中配置", 'yellow')
         
         # 构建命令
         if platform.system() == "Windows":
@@ -173,6 +208,24 @@ def start_service():
         return False
 
 def main():
+    global PORT
+    
+    # 加载.env文件
+    load_env_file()
+    
+    # 解析命令行参数
+    args = parse_arguments()
+    
+    # 优先级: 命令行参数 > 环境变量 > 默认值
+    if args.port:
+        PORT = args.port
+    elif 'PORT' in os.environ:
+        try:
+            PORT = int(os.environ['PORT'])
+            print_color(f"使用端口: {PORT}", 'blue')
+        except ValueError:
+            print_color(f"环境变量PORT值 '{os.environ['PORT']}' 无效，使用默认端口 {PORT}", 'yellow')
+    
     print_welcome()
     
     if not check_requirements():

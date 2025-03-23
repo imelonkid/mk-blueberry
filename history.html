@@ -7,10 +7,19 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: white;
+            z-index: 100;
+        }
+        
         .history-container {
             padding: 20px;
             max-width: 1200px;
             margin: 0 auto;
+            padding-bottom: 60px; /* 为固定的footer留出空间 */
         }
         
         .history-header {
@@ -271,7 +280,7 @@
         <div class="history-header">
             <h1 class="history-title">历史记录</h1>
             <a href="index.html" class="btn btn-primary">
-                <i class="fas fa-upload"></i> 上传新文件
+                <i class="fas fa-home"></i> 返回首页
             </a>
         </div>
         
@@ -294,9 +303,6 @@
                 <i class="fas fa-file-alt"></i>
                 <h3>暂无历史记录</h3>
                 <p>您还没有上传过任何文件，请前往首页上传PDF文件进行翻译。</p>
-                <a href="index.html" class="btn btn-primary">
-                    <i class="fas fa-upload"></i> 上传新文件
-                </a>
             </div>
         </div>
     </main>
@@ -343,151 +349,216 @@
                 
                 console.log('开始加载文件列表...');
                 
-                // 直接使用backend/uploads目录检查文件
-                loadFilesFromUploads();
+                // 首先尝试通过API获取所有任务
+                fetch('/api/tasks')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('获取任务列表失败');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.tasks && data.tasks.length > 0) {
+                            console.log('通过API获取到任务列表:', data.tasks);
+                            
+                            // 处理任务数据
+                            const processedFiles = data.tasks.map(task => {
+                                return {
+                                    task_id: task.task_id,
+                                    filename: task.filename,
+                                    created_time: new Date(task.created_at || Date.now()).getTime(),
+                                    translated: task.status === 'completed'
+                                };
+                            });
+                            
+                            allFiles = processedFiles;
+                            hideLoading();
+                            renderFiles();
+                        } else {
+                            throw new Error('没有找到任务');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('API获取任务列表失败:', error);
+                        // 如果API调用失败，尝试使用目录扫描方法
+                        loadFilesFromDirectories();
+                    });
             }
 
-            // 直接从uploads目录加载文件
-            function loadFilesFromUploads() {
-                console.log('尝试直接从上传目录加载文件...');
+            // 从文件系统目录加载文件
+            function loadFilesFromDirectories() {
+                console.log('尝试从目录加载文件...');
                 
-                // 创建一个错误消息元素并添加到文件列表中
-                function createErrorElement(message) {
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'error-message';
-                    errorDiv.style.padding = '15px';
-                    errorDiv.style.margin = '20px 0';
-                    errorDiv.style.backgroundColor = '#fff1f0';
-                    errorDiv.style.border = '1px solid #ffa39e';
-                    errorDiv.style.borderRadius = '6px';
-                    errorDiv.style.color = '#f5222d';
-                    errorDiv.style.display = 'flex';
-                    errorDiv.style.alignItems = 'center';
-                    
-                    errorDiv.innerHTML = `
-                        <i class="fas fa-exclamation-circle" style="margin-right: 10px; font-size: 20px;"></i>
-                        <div>
-                            <p style="margin: 0 0 10px 0; font-weight: bold;">${message}</p>
-                            <button class="btn btn-outline" onclick="window.location.reload()" style="padding: 5px 10px; background: transparent; border: 1px solid #f5222d; color: #f5222d; border-radius: 4px; cursor: pointer;">
-                                <i class="fas fa-sync"></i> 重试
-                            </button>
-                        </div>
-                    `;
-                    
-                    return errorDiv;
-                }
-
-                // 手动创建文件列表 - 我们已经从后端确认有上传的文件
-                const filesFromDirectory = [
-                    // 从backend/uploads目录加载的文件列表
-                    {
-                        task_id: '875469fa-d9b2-4d11-998b-9e7f7439e170',
-                        filename: '2503.15553v1.pdf',
-                        created_time: new Date('2022-03-22T11:22:00').getTime(),
-                        translated: true
-                    },
-                    {
-                        task_id: '66a85bbd-6ea8-4aa1-bec3-f5d2a977c1ea',
-                        filename: '2503.15553v1.pdf',
-                        created_time: new Date('2023-03-23T12:47:00').getTime(),
-                        translated: true
-                    },
-                    {
-                        task_id: '8c1d7068-bdf5-45fc-910d-217a3c9d2715',
-                        filename: '2503.15553v1.pdf',
-                        created_time: new Date('2023-03-23T12:45:00').getTime(),
-                        translated: true
-                    },
-                    {
-                        task_id: '96472ff2-0938-436b-9779-9275415365eb',
-                        filename: '2503.15553v1.pdf', 
-                        created_time: new Date('2023-03-23T13:04:00').getTime(),
-                        translated: true
-                    },
-                    {
-                        task_id: 'b0973670-6930-45c9-a8e8-1602e392ed8c',
-                        filename: '2503.15553v1.pdf',
-                        created_time: new Date('2023-03-23T12:24:00').getTime(),
-                        translated: true
-                    },
-                    {
-                        task_id: 'dc72a9c4-3511-461b-9934-1c51d51e21a2',
-                        filename: '2503.15553v1.pdf',
-                        created_time: new Date('2023-03-23T11:24:00').getTime(),
-                        translated: true
-                    },
-                    {
-                        task_id: '1beef9a1-baae-4af4-aa31-32ce1f9c83ec',
-                        filename: '2503.15553v1.pdf',
-                        created_time: new Date('2023-03-23T13:06:00').getTime(),
-                        translated: false
-                    }
-                ];
-                
-                if (filesFromDirectory.length > 0) {
-                    console.log('直接从目录获取到文件列表:', filesFromDirectory);
-                    allFiles = filesFromDirectory;
-                    
-                    // 清除加载状态
-                    hideLoading();
-                    
-                    // 渲染文件列表
-                    renderFiles();
-                    
-                    // 添加提示信息
-                    const noteDiv = document.createElement('div');
-                    noteDiv.style.padding = '10px';
-                    noteDiv.style.margin = '10px 0';
-                    noteDiv.style.backgroundColor = '#f6ffed';
-                    noteDiv.style.border = '1px solid #b7eb8f';
-                    noteDiv.style.borderRadius = '6px';
-                    noteDiv.style.color = '#52c41a';
-                    noteDiv.innerHTML = `
-                        <i class="fas fa-info-circle" style="margin-right: 5px;"></i>
-                        这些文件是从上传目录直接加载的。该页面目前可能无法检测翻译状态。
-                    `;
-                    fileList.appendChild(noteDiv);
-                } else {
-                    console.log('没有找到文件');
-                    hideLoading();
-                    
-                    // 显示一个更明确的错误消息，解释问题并提供解决方案
-                    const errorElement = createErrorElement('检测到上传目录中有文件，但无法通过API访问。这可能是由于后端API未正确配置导致的。');
-                    
-                    // 清空文件列表（除了加载和空状态元素）
-                    Array.from(fileList.children).forEach(child => {
-                        if (child !== loadingOverlay && child !== emptyState) {
-                            child.remove();
+                // 1. 获取最近文件列表
+                fetch('/api/recent_files')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('获取最近文件列表失败');
                         }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.files && data.files.length > 0) {
+                            console.log('获取到最近文件列表:', data.files);
+                            processUploadedFiles(data.files);
+                        } else {
+                            throw new Error('没有找到最近文件');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('获取最近文件列表失败:', error);
+                        createErrorMessage('无法加载历史记录。请确保PDF翻译服务正在运行。');
                     });
-                    
-                    // 隐藏空状态提示
-                    emptyState.style.display = 'none';
-                    
-                    // 添加错误元素
-                    fileList.appendChild(errorElement);
-                }
             }
             
-            // 检查文件是否已翻译 - 简化版本
+            // 处理上传的文件列表
+            function processUploadedFiles(files) {
+                const processedFiles = [];
+                let completedChecks = 0;
+                
+                // 如果没有文件
+                if (files.length === 0) {
+                    hideLoading();
+                    showEmptyState();
+                    return;
+                }
+                
+                files.forEach(file => {
+                    const taskId = file.task_id;
+                    const filename = file.filename.includes('_') ? file.filename.split('_').slice(1).join('_') : file.filename;
+                    
+                    // 检查翻译状态
+                    checkTranslationStatus(taskId)
+                        .then(isTranslated => {
+                            processedFiles.push({
+                                task_id: taskId,
+                                filename: filename,
+                                created_time: file.created_time * 1000, // 转换为毫秒
+                                translated: isTranslated
+                            });
+                            
+                            completedChecks++;
+                            
+                            // 当所有文件检查完成后，更新UI
+                            if (completedChecks === files.length) {
+                                allFiles = processedFiles;
+                                hideLoading();
+                                renderFiles();
+                            }
+                        })
+                        .catch(error => {
+                            console.error(`检查任务 ${taskId} 翻译状态时出错:`, error);
+                            processedFiles.push({
+                                task_id: taskId,
+                                filename: filename,
+                                created_time: file.created_time * 1000,
+                                translated: false // 出错时默认为未翻译
+                            });
+                            
+                            completedChecks++;
+                            
+                            // 当所有文件检查完成后，更新UI
+                            if (completedChecks === files.length) {
+                                allFiles = processedFiles;
+                                hideLoading();
+                                renderFiles();
+                            }
+                        });
+                });
+            }
+            
+            // 检查文件是否已翻译
             function checkTranslationStatus(taskId) {
-                console.log('检查文件翻译状态:', taskId);
+                return fetch(`/api/check_translation/${taskId}`)
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json().then(data => data.status === 'completed');
+                        }
+                        
+                        // 如果API不存在，尝试检查translated目录
+                        return checkTranslatedDirectory(taskId);
+                    })
+                    .catch(error => {
+                        console.error(`检查任务 ${taskId} 状态时出错:`, error);
+                        return checkTranslatedDirectory(taskId);
+                    });
+            }
+            
+            // 检查translated目录中是否存在对应的文件
+            function checkTranslatedDirectory(taskId) {
+                return fetch(`/api/translated_files/${taskId}/exists`)
+                    .then(response => {
+                        if (response.ok) {
+                            return true;
+                        }
+                        
+                        // 如果API返回404，可能是文件不存在
+                        if (response.status === 404) {
+                            return false;
+                        }
+                        
+                        // 其他错误也认为未翻译
+                        return false;
+                    })
+                    .catch(() => {
+                        // 兜底方案：检查如果能获取到翻译后的PDF，则认为已翻译
+                        return new Promise(resolve => {
+                            const img = new Image();
+                            img.onload = () => resolve(true);
+                            img.onerror = () => resolve(false);
+                            img.src = `/api/translated_files/${taskId}/dual.pdf#page=1&zoom=50`;
+                            
+                            // 3秒超时
+                            setTimeout(() => resolve(false), 3000);
+                        });
+                    });
+            }
+            
+            // 创建错误消息
+            function createErrorMessage(message) {
+                hideLoading();
                 
-                // 检查是否在results目录中存在对应的文件
-                const translatedTaskIds = [
-                    '875469fa-d9b2-4d11-998b-9e7f7439e170',
-                    '66a85bbd-6ea8-4aa1-bec3-f5d2a977c1ea',
-                    '8c1d7068-bdf5-45fc-910d-217a3c9d2715',
-                    '96472ff2-0938-436b-9779-9275415365eb',
-                    'b0973670-6930-45c9-a8e8-1602e392ed8c',
-                    'dc72a9c4-3511-461b-9934-1c51d51e21a2'
-                ];
+                // 清空文件列表（除了加载和空状态元素）
+                Array.from(fileList.children).forEach(child => {
+                    if (child !== loadingOverlay && child !== emptyState) {
+                        child.remove();
+                    }
+                });
                 
-                return Promise.resolve(translatedTaskIds.includes(taskId));
+                // 创建错误元素
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.style.padding = '15px';
+                errorDiv.style.margin = '20px 0';
+                errorDiv.style.backgroundColor = '#fff1f0';
+                errorDiv.style.border = '1px solid #ffa39e';
+                errorDiv.style.borderRadius = '6px';
+                errorDiv.style.color = '#f5222d';
+                errorDiv.style.display = 'flex';
+                errorDiv.style.alignItems = 'center';
+                
+                errorDiv.innerHTML = `
+                    <i class="fas fa-exclamation-circle" style="margin-right: 10px; font-size: 20px;"></i>
+                    <div>
+                        <p style="margin: 0 0 10px 0; font-weight: bold;">${message}</p>
+                        <button class="btn btn-outline" onclick="window.location.reload()" style="padding: 5px 10px; background: transparent; border: 1px solid #f5222d; color: #f5222d; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-sync"></i> 重试
+                        </button>
+                    </div>
+                `;
+                
+                // 添加错误元素
+                fileList.appendChild(errorDiv);
+                
+                // 隐藏空状态提示
+                emptyState.style.display = 'none';
             }
             
             // 渲染文件列表
             function renderFiles() {
+                // 确保先隐藏空状态提示
+                emptyState.style.display = 'none';
+                
                 // 清空文件列表（除了加载和空状态元素）
                 Array.from(fileList.children).forEach(child => {
                     if (child !== loadingOverlay && child !== emptyState) {
@@ -504,7 +575,11 @@
                 }
                 
                 if (filteredFiles.length === 0) {
-                    showEmptyStateWithMessage('没有符合条件的文件');
+                    if (allFiles.length > 0) {
+                        showEmptyStateWithMessage('尝试切换筛选条件或返回首页上传新文件');
+                    } else {
+                        showEmptyState();
+                    }
                     return;
                 }
                 
@@ -576,13 +651,29 @@
             
             // 显示空状态
             function showEmptyState() {
+                // 确保清除所有文件卡片
+                Array.from(fileList.children).forEach(child => {
+                    if (child !== loadingOverlay && child !== emptyState) {
+                        child.remove();
+                    }
+                });
+                
                 emptyState.style.display = 'block';
             }
             
             // 显示带自定义消息的空状态
             function showEmptyStateWithMessage(message) {
+                // 再次确保清除所有文件卡片
+                Array.from(fileList.children).forEach(child => {
+                    if (child !== loadingOverlay && child !== emptyState) {
+                        child.remove();
+                    }
+                });
+                
+                emptyState.querySelector('h3').textContent = '没有符合条件的文件';
                 emptyState.querySelector('p').textContent = message;
-                showEmptyState();
+                emptyState.querySelector('i').className = 'fas fa-filter';
+                emptyState.style.display = 'block';
             }
         });
     </script>

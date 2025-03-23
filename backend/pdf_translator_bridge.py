@@ -487,82 +487,105 @@ def main():
             
             @app.route('/api/check_translation/<task_id>', methods=['GET'])
             def check_translation(task_id):
-                """检查特定任务是否已经有翻译结果"""
+                """检查翻译状态"""
                 if task_id not in tasks:
-                    # 尝试检查结果目录是否有对应的文件，可能是从之前的会话保存的
-                    result_folder = os.path.join(RESULT_FOLDER, task_id)
-                    
-                    if os.path.exists(result_folder):
-                        # 如果结果文件夹存在，检查是否有翻译文件
-                        mono_path = os.path.join(result_folder, f"{task_id}_translated_mono.pdf")
-                        dual_path = os.path.join(result_folder, f"{task_id}_translated_dual.pdf")
+                    # 尝试从文件系统中恢复任务
+                    try:
+                        result_folder = os.path.join(RESULT_FOLDER, task_id)
+                        translated_exist = os.path.exists(result_folder)
                         
-                        has_mono = os.path.exists(mono_path)
-                        has_dual = os.path.exists(dual_path)
-                        
-                        if has_mono or has_dual:
-                            # 找到了翻译文件，将任务添加到tasks字典
-                            # 尝试找到原始文件
-                            uploads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-                            original_files = [f for f in os.listdir(uploads_dir) if f.startswith(task_id)]
+                        if translated_exist:
+                            # 查找翻译结果文件
+                            dual_path = os.path.join(result_folder, f"{task_id}_translated_dual.pdf")
+                            mono_path = os.path.join(result_folder, f"{task_id}_translated_mono.pdf")
                             
+                            # 查找原始文件
+                            uploads_dir = os.path.join(UPLOAD_FOLDER)
+                            original_files = [f for f in os.listdir(uploads_dir) if f.startswith(f"{task_id}_")]
                             original_path = None
-                            filename = "unknown.pdf"
+                            filename = None
                             
                             if original_files:
                                 original_path = os.path.join(uploads_dir, original_files[0])
                                 filename = original_files[0].replace(f"{task_id}_", "")
                             
-                            # 创建任务记录
+                            # 恢复任务信息
+                            if os.path.exists(dual_path) or os.path.exists(mono_path):
+                                # 将任务添加到tasks字典
+                                tasks[task_id] = {
+                                    "id": task_id,
+                                    "filename": filename or "未知文件",
+                                    "original_path": original_path,
+                                    "result_path": dual_path if os.path.exists(dual_path) else mono_path,
+                                    "status": "completed",
+                                    "message": "已从结果目录恢复任务"
+                                }
+                                
+                                logger.info(f"从结果目录恢复了任务 {task_id}")
+                                
+                                return jsonify({
+                                    "task_id": task_id,
+                                    "status": "completed",
+                                    "message": "翻译已完成"
+                                })
+                        
+                        # 如果只有上传文件但没有翻译结果
+                        uploads_dir = os.path.join(UPLOAD_FOLDER)
+                        original_files = [f for f in os.listdir(uploads_dir) if f.startswith(f"{task_id}_")]
+                        
+                        if original_files:
+                            original_path = os.path.join(uploads_dir, original_files[0])
+                            filename = original_files[0].replace(f"{task_id}_", "")
+                            
+                            # 添加到tasks字典
                             tasks[task_id] = {
                                 "id": task_id,
                                 "filename": filename,
                                 "original_path": original_path,
-                                "result_path": dual_path if has_dual else mono_path,
-                                "status": "completed",
-                                "message": "已从之前的会话恢复任务"
+                                "result_path": None,
+                                "status": "pending",
+                                "message": "任务已创建"
                             }
                             
-                            logger.info(f"从结果目录恢复了任务 {task_id}")
+                            logger.info(f"从上传目录恢复了任务 {task_id}")
                             
                             return jsonify({
-                                "exists": True,
-                                "formats": {
-                                    "mono": has_mono,
-                                    "dual": has_dual
-                                },
-                                "status": "completed"
+                                "task_id": task_id,
+                                "status": "pending",
+                                "message": "等待翻译"
                             })
+                            
+                        return jsonify({"error": "任务不存在"}), 404
+                    except Exception as e:
+                        logger.exception(f"尝试恢复任务 {task_id} 失败: {str(e)}")
+                        return jsonify({"error": "任务不存在"}), 404
                 
                 task = tasks[task_id]
-                
-                # 检查是否有结果文件
-                result_folder = os.path.join(RESULT_FOLDER, task_id)
-                
-                # 检查mono和dual两种格式
-                mono_path = os.path.join(result_folder, f"{task_id}_translated_mono.pdf")
-                dual_path = os.path.join(result_folder, f"{task_id}_translated_dual.pdf")
-                
-                has_mono = os.path.exists(mono_path)
-                has_dual = os.path.exists(dual_path)
-                
-                if has_mono or has_dual:
-                    # 如果找到了翻译文件，但任务状态不是completed，更新状态
-                    if task['status'] != 'completed':
-                        task['status'] = 'completed'
-                        task['message'] = '翻译完成'
-                        task['result_path'] = dual_path if has_dual else mono_path
+                return jsonify({
+                    "task_id": task_id,
+                    "status": task['status'],
+                    "message": task['message']
+                })
+            
+            @app.route('/api/translated_files/<task_id>/exists', methods=['GET'])
+            def check_translated_file(task_id):
+                """检查翻译文件是否存在"""
+                try:
+                    result_folder = os.path.join(RESULT_FOLDER, task_id)
+                    if not os.path.exists(result_folder):
+                        return jsonify({"exists": False}), 404
                     
-                    return jsonify({
-                        "exists": True,
-                        "formats": {
-                            "mono": has_mono,
-                            "dual": has_dual
-                        },
-                        "status": task['status']
-                    })
-                
-                return jsonify({"exists": False, "status": task['status']})
+                    # 检查是否有翻译结果
+                    dual_path = os.path.join(result_folder, f"{task_id}_translated_dual.pdf")
+                    mono_path = os.path.join(result_folder, f"{task_id}_translated_mono.pdf")
+                    
+                    if os.path.exists(dual_path) or os.path.exists(mono_path):
+                        return jsonify({"exists": True})
+                    
+                    return jsonify({"exists": False}), 404
+                except Exception as e:
+                    logger.exception(f"检查翻译文件 {task_id} 时出错: {str(e)}")
+                    return jsonify({"error": str(e)}), 500
             
             @app.route('/api/latest_file', methods=['GET'])
             def get_latest_file():
@@ -667,6 +690,124 @@ def main():
                     })
                 except Exception as e:
                     logger.exception(f"获取最新文件信息出错: {str(e)}")
+                    return jsonify({"error": str(e)}), 500
+            
+            @app.route('/api/tasks', methods=['GET'])
+            def list_tasks():
+                """获取所有任务"""
+                try:
+                    # 先从内存中的tasks字典获取任务
+                    task_list = []
+                    for task_id, task in tasks.items():
+                        task_list.append({
+                            "task_id": task['id'],
+                            "filename": task['filename'],
+                            "status": task['status'],
+                            "message": task['message'],
+                            "created_at": task.get('created_at', time.time()),
+                            "completed_at": task.get('completed_at')
+                        })
+                    
+                    # 然后从文件系统中扫描所有任务，补充内存中未包含的任务
+                    # 扫描上传目录
+                    uploads_dir = os.path.join(UPLOAD_FOLDER)
+                    if os.path.exists(uploads_dir):
+                        for filename in os.listdir(uploads_dir):
+                            if "_" in filename:  # 文件名格式应该是 "task_id_filename.pdf"
+                                parts = filename.split("_", 1)
+                                if len(parts) == 2:
+                                    found_task_id = parts[0]
+                                    original_filename = parts[1]
+                                    
+                                    # 如果这个任务不在内存中，添加它
+                                    if found_task_id not in [t['task_id'] for t in task_list]:
+                                        # 检查这个任务是否有翻译结果
+                                        result_folder = os.path.join(RESULT_FOLDER, found_task_id)
+                                        dual_path = os.path.join(result_folder, f"{found_task_id}_translated_dual.pdf")
+                                        mono_path = os.path.join(result_folder, f"{found_task_id}_translated_mono.pdf")
+                                        
+                                        has_results = os.path.exists(dual_path) or os.path.exists(mono_path)
+                                        
+                                        file_path = os.path.join(uploads_dir, filename)
+                                        file_stat = os.stat(file_path)
+                                        
+                                        task_list.append({
+                                            "task_id": found_task_id,
+                                            "filename": original_filename,
+                                            "status": "completed" if has_results else "pending",
+                                            "message": "翻译完成" if has_results else "等待翻译",
+                                            "created_at": file_stat.st_ctime,
+                                            "completed_at": None
+                                        })
+                    
+                    # 扫描结果目录，可能有些任务的上传文件已被删除，但结果文件仍存在
+                    results_dir = os.path.join(RESULT_FOLDER)
+                    if os.path.exists(results_dir):
+                        for task_id in os.listdir(results_dir):
+                            result_folder = os.path.join(results_dir, task_id)
+                            if os.path.isdir(result_folder):
+                                # 如果这个任务不在任务列表中，添加它
+                                if task_id not in [t['task_id'] for t in task_list]:
+                                    # 检查是否有翻译结果
+                                    dual_path = os.path.join(result_folder, f"{task_id}_translated_dual.pdf")
+                                    mono_path = os.path.join(result_folder, f"{task_id}_translated_mono.pdf")
+                                    
+                                    if os.path.exists(dual_path) or os.path.exists(mono_path):
+                                        # 获取文件时间
+                                        file_path = dual_path if os.path.exists(dual_path) else mono_path
+                                        file_stat = os.stat(file_path)
+                                        
+                                        task_list.append({
+                                            "task_id": task_id,
+                                            "filename": f"已恢复的文件_{task_id[:8]}.pdf",
+                                            "status": "completed",
+                                            "message": "翻译完成",
+                                            "created_at": file_stat.st_ctime,
+                                            "completed_at": file_stat.st_mtime
+                                        })
+                    
+                    # 按创建时间排序，最新的在前面
+                    task_list.sort(key=lambda x: x.get('created_at', 0), reverse=True)
+                    
+                    return jsonify({"tasks": task_list})
+                except Exception as e:
+                    logger.exception(f"获取任务列表时出错: {str(e)}")
+                    return jsonify({"error": str(e)}), 500
+
+            @app.route('/api/recent_files', methods=['GET'])
+            def get_recent_files():
+                """获取最近上传的文件"""
+                try:
+                    files = []
+                    uploads_dir = os.path.join(UPLOAD_FOLDER)
+                    
+                    if not os.path.exists(uploads_dir):
+                        return jsonify({"files": []}), 200
+                    
+                    for filename in os.listdir(uploads_dir):
+                        if "_" in filename:  # 文件名格式应该是 "task_id_filename.pdf"
+                            parts = filename.split("_", 1)
+                            if len(parts) == 2:
+                                task_id = parts[0]
+                                original_name = parts[1]
+                                
+                                file_path = os.path.join(uploads_dir, filename)
+                                file_stat = os.stat(file_path)
+                                
+                                files.append({
+                                    "task_id": task_id,
+                                    "filename": original_name,
+                                    "created_time": file_stat.st_ctime,
+                                    "modified_time": file_stat.st_mtime,
+                                    "size": file_stat.st_size
+                                })
+                    
+                    # 按修改时间排序，最新的在前面
+                    files.sort(key=lambda x: x['modified_time'], reverse=True)
+                    
+                    return jsonify({"files": files})
+                except Exception as e:
+                    logger.exception(f"获取最近文件列表时出错: {str(e)}")
                     return jsonify({"error": str(e)}), 500
             
             logger.info(f"启动服务于端口 {args.port}")

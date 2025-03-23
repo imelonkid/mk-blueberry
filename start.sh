@@ -16,16 +16,42 @@ BACKEND_DIR="$SCRIPT_DIR/backend"
 FRONTEND_DIR="$SCRIPT_DIR"
 LOG_FILE="$SCRIPT_DIR/papertrans.log"
 PID_FILE="$SCRIPT_DIR/.papertrans.pid"
+
+# 设置默认端口
 PORT=8000
+
+# 从.env文件中加载环境变量（如果存在）
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    echo -e "${BLUE}从.env文件加载配置...${NC}"
+    set -a
+    source "$SCRIPT_DIR/.env"
+    set +a
+fi
+
+# 如果环境变量中设置了PORT，则使用该值
+if [ ! -z "${PORT}" ]; then
+    echo -e "${BLUE}使用端口: ${PORT}${NC}"
+fi
 
 # 激活Python 3.10环境
 export PATH="/Users/melonkid/opt/anaconda3/bin:$PATH"
 source /Users/melonkid/opt/anaconda3/etc/profile.d/conda.sh
 conda activate py310
 
-# 设置API密钥
-export DEEPSEEK_API_KEY="sk-8f35ea6a21db457fbd6270570c5b50a2"
-export OPENAI_API_KEY="sk-8f35ea6a21db457fbd6270570c5b50a2"  # 与DEEPSEEK_API_KEY使用相同的值
+# 设置API密钥（如果.env中未设置则使用默认值）
+if [ -z "${DEEPSEEK_API_KEY}" ]; then
+    echo -e "${YELLOW}未在.env中找到DEEPSEEK_API_KEY，请在.env文件中配置${NC}"
+fi
+
+if [ -z "${OPENAI_API_KEY}" ]; then
+    # 如果设置了DEEPSEEK_API_KEY，同时将其用于OPENAI_API_KEY
+    if [ ! -z "${DEEPSEEK_API_KEY}" ]; then
+        echo -e "${YELLOW}未设置OPENAI_API_KEY，使用DEEPSEEK_API_KEY作为替代${NC}"
+        export OPENAI_API_KEY="${DEEPSEEK_API_KEY}"
+    else
+        echo -e "${YELLOW}未在.env中找到OPENAI_API_KEY，请在.env文件中配置${NC}"
+    fi
+fi
 
 # 显示启动标识
 echo -e "

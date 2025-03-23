@@ -429,37 +429,32 @@
         </div>
 
         <div class="container">
-            <!-- 文件信息和状态面板 -->
-            <div class="file-info-panel" id="file-info-panel">
-                <div class="file-info" id="file-info">
-                    <h3 id="file-name">加载中...</h3>
-                    <p id="file-pages">页数: -</p>
-                    <div id="translation-status" class="translation-status status-pending">正在检查翻译状态...</div>
-                </div>
-                <div class="file-actions" style="display: flex; align-items: center;">
-                    <button id="translate-btn" class="btn btn-primary" style="display: none;">
-                        <i class="fas fa-language"></i> 开始翻译
-                    </button>
-                    <button id="retranslate-btn" class="btn btn-secondary" style="display: none;">
-                        <i class="fas fa-sync"></i> 重新翻译
-                    </button>
-                </div>
-            </div>
+            <!-- 移除整个文件信息和状态面板，改为集成到工具栏中 -->
             
-            <div class="translate-toolbar">
-                <div class="toolbar-group">
-                    <button class="btn btn-secondary active" id="dual-view-btn"><i class="fas fa-columns"></i> 双栏视图</button>
+            <div class="translate-toolbar" style="display: flex; align-items: center; padding: 10px 0; background-color: #f9f9f9; border-radius: 4px; margin-bottom: 10px;">
+                <div class="toolbar-group" style="display: flex; padding: 0 15px; border-right: 1px solid #e8e8e8;">
+                    <button class="btn btn-secondary active" id="dual-view-btn" style="margin-right: 5px;"><i class="fas fa-columns"></i> 双栏视图</button>
                     <button class="btn btn-secondary" id="single-view-btn"><i class="fas fa-align-justify"></i> 单栏视图</button>
                 </div>
-                <div class="toolbar-group">
-                    <select id="format-select" class="form-select">
-                        <option value="mono">仅中文版</option>
-                        <option value="dual">中英对照版</option>
-                    </select>
-                    <div class="form-check" style="margin-left: 10px; display: flex; align-items: center;">
-                        <input type="checkbox" id="post-process-check" checked style="margin-right: 5px;">
-                        <label for="post-process-check" style="margin-bottom: 0;">去除斜杠标记</label>
+                <div class="toolbar-group" style="display: flex; align-items: center; flex: 1; padding: 0 15px;">
+                    <div style="display: flex; align-items: center;">
+                        <span id="file-name" style="font-weight: 500; margin-right: 10px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                        <span id="file-pages" style="color: #666; font-size: 14px;"></span>
+                    </div>
                 </div>
+                <div class="toolbar-group" style="display: flex; align-items: center; padding: 0 15px; border-left: 1px solid #e8e8e8;">
+                    <div id="translation-status-container" style="display: flex; align-items: center; gap: 15px;">
+                        <span id="translation-status" class="translation-status" style="font-size: 14px; display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px;">
+                            <i class="fas fa-circle-notch fa-spin" style="margin-right: 8px; font-size: 12px;"></i>
+                            正在检查翻译状态...
+                        </span>
+                        <button id="translate-btn" class="btn btn-primary" style="display: none; min-width: 120px; justify-content: center;">
+                            <i class="fas fa-language"></i> 开始翻译
+                        </button>
+                        <button id="retranslate-btn" class="btn btn-secondary" style="display: none; min-width: 120px; justify-content: center;">
+                            <i class="fas fa-sync"></i> 重新翻译
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -506,12 +501,13 @@
             const translatedPdfContainer = document.getElementById('translated-pdf-container');
             const dualViewBtn = document.getElementById('dual-view-btn');
             const singleViewBtn = document.getElementById('single-view-btn');
-            const formatSelect = document.getElementById('format-select');
-            const postProcessCheck = document.getElementById('post-process-check');
-            const fileInfoPanel = document.getElementById('file-info-panel');
-            const fileInfo = document.getElementById('file-info');
             const fileName = document.getElementById('file-name');
             const filePages = document.getElementById('file-pages');
+            const translationStatusContainer = document.getElementById('translation-status-container');
+            
+            // 初始化隐藏文件名和页数，只在有数据时才显示
+            fileName.style.display = 'none';
+            filePages.style.display = 'none';
             
             let currentTaskId = null;
             let pdfData = null;
@@ -523,13 +519,15 @@
             
             if (!currentTaskId) {
                 // 如果URL中没有task_id，显示错误并提供返回主页的链接
-                fileInfoPanel.innerHTML = `
-                    <div class="file-error">
+                const paperContent = document.querySelector('.paper-content');
+                paperContent.innerHTML = `
+                    <div class="file-error" style="text-align: center; padding: 40px 20px;">
                         <h3>未找到文档</h3>
                         <p>无法找到要翻译的PDF文件。请返回首页上传文件。</p>
                         <a href="index.html" class="btn btn-primary">返回首页</a>
                     </div>
                 `;
+                translationStatusContainer.style.display = 'none';
                 return;
             }
             
@@ -539,6 +537,7 @@
             // 加载PDF信息函数
             function loadPdfInfo(taskId) {
                 updateStatus('pending', '正在加载文档信息...');
+                console.log('开始加载PDF信息: ' + taskId);
                 
                 // 获取文件信息
                 fetch(`/api/tasks/${taskId}`)
@@ -556,7 +555,8 @@
                                         return checkResponse.json();
                                     })
                                     .then(data => {
-                                        if (data.exists) {
+                                        console.log("检查翻译状态结果:", data);
+                                        if (data.translated) {
                                             console.log("成功从结果目录恢复任务，重新加载任务信息");
                                             // 再次尝试获取任务信息
                                             return fetch(`/api/tasks/${taskId}`).then(r => {
@@ -566,7 +566,10 @@
                                                 return r.json();
                                             });
                                         } else {
-                                            throw new Error('任务不存在，无法恢复');
+                                            // 即使API认为没有翻译，我们也应该尝试直接加载PDF文件
+                                            console.log("API表示没有翻译，但仍尝试直接加载文件");
+                                            checkResultsDirectory(taskId);
+                                            throw new Error('任务不存在，无法从API恢复');
                                         }
                                     });
                             } else {
@@ -576,8 +579,14 @@
                         return response.json();
                     })
                     .then(data => {
+                        console.log("获取到任务信息:", data);
                         // 更新文件信息
-                        fileName.textContent = data.filename;
+                        if (data.filename) {
+                            fileName.textContent = data.filename;
+                            fileName.style.display = 'inline'; // 显示文件名
+                        } else {
+                            fileName.style.display = 'none'; // 如果没有文件名，完全隐藏该元素
+                        }
                         
                         // 加载原始PDF
                         loadOriginalPdf(taskId);
@@ -591,8 +600,14 @@
                         
                         // 如果是恢复任务失败，可以尝试直接访问文件
                         console.log("尝试直接加载PDF文件");
+                        fileName.style.display = 'none'; // 隐藏文件名显示
                         loadOriginalPdf(taskId);
-                        checkTranslationStatus(taskId);
+                        
+                        // 仍然尝试检查翻译状态
+                        setTimeout(() => {
+                            console.log("延迟检查翻译状态");
+                            checkTranslationStatus(taskId);
+                        }, 1000); // 延迟1秒检查，确保原始PDF已开始加载
                     });
             }
             
@@ -604,17 +619,22 @@
             // 检查翻译状态
             function checkTranslationStatus(taskId) {
                 updateStatus('pending', '正在检查翻译状态...');
+                console.log('开始检查翻译状态: ' + taskId);
                 
                 // 使用检查翻译状态的接口，而不是直接尝试加载PDF
                 fetch(`/api/check_translation/${taskId}`)
                     .then(response => {
                         if (!response.ok) {
+                            console.log('API响应不正常: ' + response.status);
                             throw new Error('检查翻译状态失败');
                         }
                         return response.json();
                     })
                     .then(data => {
-                        if (data.exists) {
+                        console.log('翻译状态检查结果:', data);
+                        
+                        if (data.translated) {
+                            console.log('后端API确认文档已翻译');
                             // 已有翻译
                             translationAvailable = true;
                             updateStatus('completed', '文档已翻译');
@@ -624,11 +644,9 @@
                             // 加载翻译后的PDF
                             loadTranslatedPdf(taskId);
                         } else {
-                            // 没有翻译
-                            translationAvailable = false;
-                            updateStatus('pending', '文档尚未翻译');
-                            translateBtn.style.display = 'inline-block';
-                            retranslateBtn.style.display = 'none';
+                            console.log('后端API表示文档未翻译，尝试直接检查文件');
+                            // 再直接检查一下结果文件
+                            checkResultsDirectory(taskId);
                         }
                     })
                     .catch(error => {
@@ -642,17 +660,27 @@
             
             // 备用检查方法，尝试直接加载PDF
             function fallbackCheckTranslation(taskId) {
-                // 尝试加载翻译后的PDF
-                fetch(`/api/translated_files/${taskId}/dual.pdf`)
+                console.log('使用备用方法检查翻译状态: ' + taskId);
+                // 尝试加载翻译后的PDF（改用mono.pdf文件）
+                fetch(`/api/translated_files/${taskId}/mono.pdf`)
                     .then(response => {
                         if (!response.ok) {
+                            console.log('未找到mono.pdf，尝试dual.pdf');
+                            // 尝试其他可能的PDF文件名
+                            return fetch(`/api/translated_files/${taskId}/dual.pdf`);
+                        }
+                        console.log('找到mono.pdf');
+                        return response;
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            console.log('未找到任何翻译PDF文件');
                             // 没有找到翻译文件
-                            translationAvailable = false;
-                            updateStatus('pending', '文档尚未翻译');
-                            translateBtn.style.display = 'inline-block';
-                            retranslateBtn.style.display = 'none';
+                            // 再尝试一次直接检查结果目录，因为从历史页面跳转的文件可能在results目录
+                            checkResultsDirectory(taskId);
                             return null;
                         }
+                        console.log('找到翻译文件');
                         // 找到翻译文件
                         translationAvailable = true;
                         updateStatus('completed', '文档已翻译');
@@ -668,14 +696,70 @@
                     })
                     .catch(error => {
                         console.error('备用检查翻译状态出错:', error);
-                        updateStatus('failed', '检查翻译状态失败: ' + error.message);
+                        
+                        // 再尝试一次，直接检查结果目录
+                        checkResultsDirectory(taskId);
+                    });
+            }
+            
+            // 添加额外的检查方法，直接检查results目录
+            function checkResultsDirectory(taskId) {
+                console.log("尝试直接检查backend/results目录下的文件");
+                
+                // 首先尝试直接获取翻译后的PDF文件
+                fetch(`/api/translated_files/${taskId}/mono.pdf`)
+                    .then(response => {
+                        if (response.ok) {
+                            console.log("成功找到翻译PDF文件");
+                            translationAvailable = true;
+                            updateStatus('completed', '文档已翻译');
+                            translateBtn.style.display = 'none';
+                            retranslateBtn.style.display = 'inline-block';
+                            
+                            // 加载翻译后的PDF
+                            loadTranslatedPdf(taskId);
+                            return true;
+                        }
+                        
+                        console.log("未找到mono.pdf，尝试其他文件");
+                        // 如果没有找到mono.pdf，尝试检查dual.pdf
+                        return fetch(`/api/translated_files/${taskId}/dual.pdf`).then(response => {
+                            if (response.ok) {
+                                console.log("找到dual.pdf文件");
+                                translationAvailable = true;
+                                updateStatus('completed', '文档已翻译');
+                                translateBtn.style.display = 'none';
+                                retranslateBtn.style.display = 'inline-block';
+                                
+                                // 加载翻译后的PDF但告知使用mono格式
+                                loadPdf(`/api/translated_files/${taskId}/dual.pdf`, translatedPdfContainer);
+                                return true;
+                            }
+                            return false;
+                        });
+                    })
+                    .then(found => {
+                        if (!found) {
+                            console.log("无法找到任何翻译文件，显示未翻译状态");
+                            translationAvailable = false;
+                            updateStatus('pending', '文档尚未翻译');
+                            translateBtn.style.display = 'inline-block';
+                            retranslateBtn.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('检查results目录出错:', error);
+                        translationAvailable = false;
+                        updateStatus('pending', '文档尚未翻译');
+                        translateBtn.style.display = 'inline-block';
+                        retranslateBtn.style.display = 'none';
                     });
             }
             
             // 加载翻译后的PDF
             function loadTranslatedPdf(taskId) {
-                const format = formatSelect.value;
-                loadPdf(`/api/translated_files/${taskId}/${format}.pdf`, translatedPdfContainer);
+                // 固定使用mono格式
+                loadPdf(`/api/translated_files/${taskId}/mono.pdf`, translatedPdfContainer);
             }
             
             // 点击翻译按钮
@@ -694,9 +778,9 @@
             function startTranslation(taskId, isRetranslation) {
                 updateStatus('processing', '正在翻译中，请稍候...');
                 
-                // 获取用户选择的格式和后处理选项
-                const selectedFormat = formatSelect.value;
-                const postProcess = postProcessCheck.checked;
+                // 固定使用mono格式(单语言中文)，并关闭后处理
+                const selectedFormat = 'mono';
+                const postProcess = false;
                 
                 // 发送请求到后端api
                 fetch('/api/translate_document', {
@@ -734,8 +818,57 @@
             
             // 更新状态显示
             function updateStatus(status, message) {
-                translationStatus.className = 'translation-status status-' + status;
-                translationStatus.textContent = message;
+                // 清除之前的所有类
+                translationStatus.className = 'translation-status';
+                
+                // 根据状态设置样式和图标
+                let iconClass = 'fa-circle-notch fa-spin';
+                let bgColor = '';
+                let textColor = '';
+                let borderColor = '';
+                
+                switch(status) {
+                    case 'completed':
+                        iconClass = 'fa-check-circle';
+                        bgColor = '#f6ffed';
+                        textColor = '#52c41a';
+                        borderColor = '#b7eb8f';
+                        break;
+                    case 'processing':
+                        iconClass = 'fa-circle-notch fa-spin';
+                        bgColor = '#e6f7ff';
+                        textColor = '#1890ff';
+                        borderColor = '#91d5ff';
+                        break;
+                    case 'pending':
+                        iconClass = 'fa-clock';
+                        bgColor = '#fff7e6';
+                        textColor = '#fa8c16';
+                        borderColor = '#ffe58f';
+                        break;
+                    case 'failed':
+                        iconClass = 'fa-exclamation-circle';
+                        bgColor = '#fff1f0';
+                        textColor = '#f5222d';
+                        borderColor = '#ffa39e';
+                        break;
+                }
+                
+                // 应用样式
+                translationStatus.style.backgroundColor = bgColor;
+                translationStatus.style.color = textColor;
+                translationStatus.style.border = `1px solid ${borderColor}`;
+                translationStatus.style.display = 'inline-flex';
+                translationStatus.style.alignItems = 'center';
+                translationStatus.style.padding = '4px 12px';
+                translationStatus.style.borderRadius = '20px';
+                translationStatus.style.fontWeight = '500';
+                
+                // 更新内容
+                translationStatus.innerHTML = `
+                    <i class="fas ${iconClass}" style="margin-right: 8px; font-size: 14px;"></i>
+                    ${message}
+                `;
             }
             
             // 加载PDF函数
@@ -786,17 +919,55 @@
                 
                 // 处理iframe加载完成事件
                 iframe.onload = function() {
-                    console.log(`PDF加载完成: ${url} -> ${container.id}`);
+                    console.log(`PDF加载完成: ${url}`);
                     
                     // 移除加载指示器
                     const indicator = container.querySelector('.loading-indicator');
                     if (indicator) indicator.remove();
                     
-                    // 添加导航控制按钮
-                    addNavigationControls(container);
+                    // 尝试获取PDF页数信息
+                    try {
+                        const iframeWindow = iframe.contentWindow;
+                        
+                        // 检查PDFViewerApplication是否可用
+                        if (iframeWindow.PDFViewerApplication) {
+                            const pdfApp = iframeWindow.PDFViewerApplication;
+                            
+                            // 检查pdfDocument是否已加载
+                            if (pdfApp.pdfDocument) {
+                                const numPages = pdfApp.pdfDocument.numPages;
+                                if (numPages) {
+                                    filePages.textContent = `页数: ${numPages}`;
+                                    filePages.style.display = 'inline';
+                                } else {
+                                    filePages.style.display = 'none';
+                                }
+                            } else {
+                                // 如果pdfDocument还没准备好，监听eventBus
+                                pdfApp.eventBus.on('documentloaded', function() {
+                                    const numPages = pdfApp.pdfDocument.numPages;
+                                    if (numPages) {
+                                        filePages.textContent = `页数: ${numPages}`;
+                                        filePages.style.display = 'inline';
+                                    } else {
+                                        filePages.style.display = 'none';
+                                    }
+                                });
+                            }
+                            
+                            // 设置PDF容器的最小高度
+                            ensurePdfContainerHeight(container);
+                        }
+                    } catch (e) {
+                        console.warn(`获取PDF页数失败:`, e);
+                        filePages.style.display = 'none';
+                    }
                     
-                    // 确保PDF容器高度正确，以启用滚动
-                    ensurePdfContainerHeight(container);
+                    // 尝试设置同步事件 - 包含了点击导航、键盘导航和滚动同步
+                    // 在这里尝试设置跨iframe的滚动同步
+                    if (container.id === 'original-pdf-container') {
+                        setupPdfJsScrollSync();
+                    }
                 };
                 
                 // 添加错误处理
@@ -894,27 +1065,6 @@
                 document.querySelector('.content-columns').style.flexDirection = 'column';
             });
             
-            // 格式选择变化事件处理
-            formatSelect.addEventListener('change', function() {
-                const selectedFormat = formatSelect.value;
-                // 仅当选择"仅中文版"时启用后处理选项
-                if (selectedFormat === 'dual') {
-                    postProcessCheck.disabled = true;
-                    postProcessCheck.parentElement.style.opacity = 0.5;
-                } else {
-                    postProcessCheck.disabled = false;
-                    postProcessCheck.parentElement.style.opacity = 1;
-                }
-                
-                // 如果已经有翻译，更新显示的PDF
-                if (translationAvailable) {
-                    loadTranslatedPdf(currentTaskId);
-                }
-            });
-            
-            // 初始化时设置后处理选项状态
-            formatSelect.dispatchEvent(new Event('change'));
-
             // 设置同步事件 - 保留此函数但只应用于页码同步
             function setupSyncEvents() {
                 // 全局键盘事件处理
