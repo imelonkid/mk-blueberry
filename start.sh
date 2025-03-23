@@ -33,6 +33,39 @@ if [ ! -z "${PORT}" ]; then
     echo -e "${BLUE}使用端口: ${PORT}${NC}"
 fi
 
+# 预检查：确保端口未被占用
+PORT_PID=$(lsof -t -i:$PORT 2>/dev/null)
+if [ ! -z "$PORT_PID" ]; then
+    echo -e "${YELLOW}警告: 端口 $PORT 已被进程 $PORT_PID 占用${NC}"
+    read -p "是否尝试释放端口并继续? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}尝试释放端口...${NC}"
+        kill $PORT_PID 2>/dev/null
+        sleep 2
+        
+        # 如果正常终止失败，尝试强制终止
+        if lsof -t -i:$PORT >/dev/null 2>&1; then
+            echo -e "${YELLOW}正常终止失败，尝试强制终止...${NC}"
+            kill -9 $PORT_PID 2>/dev/null
+            sleep 1
+            
+            # 再次检查
+            if lsof -t -i:$PORT >/dev/null 2>&1; then
+                echo -e "${RED}错误: 无法释放端口 $PORT，请手动关闭占用该端口的程序或更改端口号${NC}"
+                exit 1
+            else
+                echo -e "${GREEN}端口已成功释放${NC}"
+            fi
+        else
+            echo -e "${GREEN}端口已成功释放${NC}"
+        fi
+    else
+        echo -e "${RED}操作已取消${NC}"
+        exit 1
+    fi
+fi
+
 # 激活Python 3.10环境
 export PATH="/Users/melonkid/opt/anaconda3/bin:$PATH"
 
@@ -118,12 +151,30 @@ sleep 3
 
 # 检查服务是否成功启动
 if ps -p $PID > /dev/null; then
-    echo -e "${GREEN}PDF翻译服务已成功启动 (PID: $PID)${NC}"
-    echo -e "${YELLOW}日志文件: $LOG_FILE${NC}\n"
-    echo -e "${GREEN}服务已启动!${NC}"
-    echo -e "${BLUE}请在浏览器中访问: http://localhost:$PORT/translate.html${NC}\n"
-    echo -e "${YELLOW}要停止服务，请运行 stop.sh 脚本或关闭服务窗口${NC}"
+    # 进一步验证端口是否被我们的进程监听
+    LISTENING_PID=$(lsof -t -i:$PORT 2>/dev/null)
+    if [ "$LISTENING_PID" = "$PID" ] || [ -z "$LISTENING_PID" ]; then
+        echo -e "${GREEN}PDF翻译服务已成功启动 (PID: $PID)${NC}"
+        echo -e "${YELLOW}日志文件: $LOG_FILE${NC}\n"
+        echo -e "${GREEN}服务已启动!${NC}"
+        echo -e "${BLUE}请在浏览器中访问: http://localhost:$PORT/translate.html${NC}\n"
+        echo -e "${YELLOW}要停止服务，请运行 stop.sh 脚本或关闭服务窗口${NC}"
+    else
+        echo -e "${RED}服务进程已启动，但不是监听端口 $PORT 的进程${NC}"
+        echo -e "${YELLOW}日志文件: $LOG_FILE${NC}"
+        # 检查日志文件中的错误
+        if [ -f "$LOG_FILE" ]; then
+            echo -e "${YELLOW}日志文件最后几行:${NC}"
+            tail -n 10 "$LOG_FILE"
+        fi
+        exit 1
+    fi
 else
     echo -e "${RED}服务启动失败，请检查日志文件了解详情: $LOG_FILE${NC}"
+    # 显示日志文件的最后几行
+    if [ -f "$LOG_FILE" ]; then
+        echo -e "${YELLOW}日志文件最后几行:${NC}"
+        tail -n 10 "$LOG_FILE"
+    fi
     exit 1
 fi 
