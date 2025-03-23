@@ -171,4 +171,5 @@ cython_debug/
 .DS_Store
 uv.lock
 *.pdf
+*.log
 *.docx
